@@ -1,0 +1,144 @@
+const { Vehicle, Order, User, Dealer, ActivationLog } = require('../models');
+// (ActivationLog already imported above — used by deleteVehicle for cascade cleanup)
+
+exports.getMyVehicles = async (req, res) => {
+  try {
+    const vehicles = await Vehicle.findAll({
+      where: { customerId: req.user.id },
+      include: [
+        { model: Order, as: 'order', attributes: ['orderNumber', 'orderStatus'] },
+        { model: Dealer, as: 'dealer', attributes: ['salesCode', 'companyName'] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json({ success: true, count: vehicles.length, vehicles });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getVehicleById = async (req, res) => {
+  try {
+    const vehicle = await Vehicle.findByPk(req.params.id, {
+      include: [
+        { model: User, as: 'customer', attributes: ['name', 'phone'] },
+        { model: Dealer, as: 'dealer', attributes: ['salesCode', 'companyName'] },
+        { model: Order, as: 'order', attributes: ['orderNumber'] },
+        { model: ActivationLog, as: 'activationLogs' }
+      ]
+    });
+    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+    res.json({ success: true, vehicle });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getDealerVehicles = async (req, res) => {
+  try {
+    const dealer = await Dealer.findOne({ where: { userId: req.user.id } });
+    if (!dealer) return res.status(404).json({ message: 'Dealer profile not found' });
+
+    const vehicles = await Vehicle.findAll({
+      where: { dealerId: dealer.id },
+      include: [
+        { model: User, as: 'customer', attributes: ['name', 'email', 'phone'] },
+        { model: Order, as: 'order', attributes: ['orderNumber'] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json({ success: true, count: vehicles.length, vehicles });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getAllVehicles = async (req, res) => {
+  try {
+    const vehicles = await Vehicle.findAll({
+      include: [
+        { model: User, as: 'customer', attributes: ['name', 'phone'] },
+        { model: Dealer, as: 'dealer', attributes: ['salesCode', 'companyName'] },
+        { model: Order, as: 'order', attributes: ['orderNumber'] }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+    res.json({ success: true, count: vehicles.length, vehicles });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// POST /api/vehicles — admin adds a device/vehicle directly (independent of the order+activation flow,
+// e.g. bulk stock entry or a device sold outside a formal order).
+exports.createVehicle = async (req, res) => {
+  try {
+    const {
+      customerId, dealerId, orderId, imeiNumber, deviceSerialNumber, simNumber,
+      vehicleNumber, vehicleType, vehicleBrand, vehicleModel, activationStatus
+    } = req.body;
+
+    if (!customerId || !imeiNumber || !deviceSerialNumber) {
+      return res.status(400).json({ message: 'customerId, imeiNumber and deviceSerialNumber are required' });
+    }
+
+    const customer = await User.findByPk(customerId);
+    if (!customer) return res.status(404).json({ message: 'Customer not found' });
+
+    const existingImei = await Vehicle.findOne({ where: { imeiNumber } });
+    if (existingImei) return res.status(400).json({ message: 'A device with this IMEI already exists' });
+
+    const vehicle = await Vehicle.create({
+      customerId,
+      dealerId: dealerId || null,
+      orderId: orderId || null,
+      imeiNumber,
+      deviceSerialNumber,
+      simNumber: simNumber || null,
+      vehicleNumber: vehicleNumber || null,
+      vehicleType: vehicleType || 'car',
+      vehicleBrand: vehicleBrand || null,
+      vehicleModel: vehicleModel || null,
+      activationStatus: activationStatus || 'pending',
+      activatedBy: req.user.id
+    });
+
+    res.status(201).json({ success: true, message: 'Device added', vehicle });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// PUT /api/vehicles/:id — admin edits device/vehicle details
+exports.updateVehicle = async (req, res) => {
+  try {
+    const vehicle = await Vehicle.findByPk(req.params.id);
+    if (!vehicle) return res.status(404).json({ message: 'Device not found' });
+
+    const fields = ['vehicleNumber', 'vehicleType', 'vehicleBrand', 'vehicleModel', 'simNumber', 'dealerId', 'activationStatus', 'isActive'];
+    fields.forEach((f) => {
+      if (req.body[f] !== undefined) vehicle[f] = req.body[f];
+    });
+    if (req.body.activationStatus === 'activated' && !vehicle.activatedAt) vehicle.activatedAt = new Date();
+    await vehicle.save();
+
+    res.json({ success: true, message: 'Device updated', vehicle });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// DELETE /api/vehicles/:id — admin removes a device/vehicle entirely (and its activation history)
+exports.deleteVehicle = async (req, res) => {
+  try {
+    const vehicle = await Vehicle.findByPk(req.params.id);
+    if (!vehicle) return res.status(404).json({ message: 'Device not found' });
+
+    await ActivationLog.destroy({ where: { vehicleId: vehicle.id } });
+    await vehicle.destroy();
+
+    res.json({ success: true, message: 'Device deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

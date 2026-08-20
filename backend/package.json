@@ -1,0 +1,35 @@
+{
+  "name": "supergps-backend",
+  "version": "1.0.0",
+  "description": "SuperGPS Backend - Order & Activation Flow",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "setup:db": "node scripts/setupDatabase.js",
+    "migrate:order-vehicles": "node scripts/migrateOrderVehicleFields.js",
+    "seed": "node seed.js",
+    "test": "npm run test:tracking",
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "test:codec": "node tracking/teltonikaCodec.test.js",
+    "test:tcp": "node tracking/tcpServer.test.js",
+    "test:tracking": "npm run test:codec && npm run test:tcp"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.6.2",
+    "express-validator": "^7.0.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.23.0",
+    "sequelize": "^6.35.0",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "socket.io-client": "^4.8.3"
+  }
+}
