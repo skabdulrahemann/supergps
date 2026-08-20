@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../constants/colors.dart';
-import 'home_screen.dart';
+import 'otp_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,14 +16,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+  final _confirmPassCtrl = TextEditingController();
   bool _obscure = true;
+  bool _acceptedTerms = false;
   bool _loading = false;
   String? _error;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _emailCtrl.dispose();
+    _phoneCtrl.dispose();
+    _passCtrl.dispose();
+    _confirmPassCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _register() async {
     if (_nameCtrl.text.trim().isEmpty || _emailCtrl.text.trim().isEmpty ||
         _phoneCtrl.text.trim().isEmpty || _passCtrl.text.isEmpty) {
       setState(() => _error = 'Please fill all fields');
+      return;
+    }
+    if (_passCtrl.text != _confirmPassCtrl.text) {
+      setState(() => _error = 'Password aur confirm password match nahi hain');
+      return;
+    }
+    if (!_acceptedTerms) {
+      setState(() => _error = 'Terms acceptance required hai');
       return;
     }
     setState(() { _loading = true; _error = null; });
@@ -37,7 +57,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(builder: (_) => OtpScreen(mobile: _phoneCtrl.text.trim())),
           (route) => false,
         );
       }
@@ -125,6 +145,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       color: AppColors.textMuted, size: 22),
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
+              ),
+              const SizedBox(height: 16),
+              _buildField(
+                'Confirm Password',
+                'Repeat password',
+                Icons.lock_reset_rounded,
+                _confirmPassCtrl,
+                obscureText: _obscure,
+              ),
+              const SizedBox(height: 16),
+              CheckboxListTile(
+                value: _acceptedTerms,
+                onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: const Text('I accept Privacy Policy & Terms',
+                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
               ),
               const SizedBox(height: 32),
               SizedBox(

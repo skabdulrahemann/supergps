@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import '../models/vehicle_model.dart';
 import '../services/api_service.dart';
+import 'gps_feature_screens.dart';
 
 class VehiclesScreen extends StatefulWidget {
   const VehiclesScreen({super.key});
@@ -13,6 +14,8 @@ class VehiclesScreen extends StatefulWidget {
 class _VehiclesScreenState extends State<VehiclesScreen> {
   List<VehicleModel> _vehicles = [];
   bool _loading = true;
+  String _query = '';
+  String _filter = 'all';
 
   @override
   void initState() {
@@ -33,17 +36,15 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
     }
   }
 
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'activated': return AppColors.success;
-      case 'in_progress': return AppColors.primary;
-      case 'pending': return AppColors.warning;
-      default: return AppColors.textMuted;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final filtered = _vehicles.where((v) {
+      final text = '${v.vehicleNumber ?? ''} ${v.vehicleBrand ?? ''} ${v.vehicleModel ?? ''}'.toLowerCase();
+      final matchesQuery = text.contains(_query.toLowerCase());
+      final matchesFilter = _filter == 'all' || v.activationStatus == _filter;
+      return matchesQuery && matchesFilter;
+    }).toList();
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
@@ -69,10 +70,22 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                           const Center(child: Text('Vehicles appear after dealer activation', style: TextStyle(fontSize: 14, color: AppColors.textMuted, fontFamily: 'Inter'))),
                         ],
                       )
-                    : ListView.builder(
+                    : ListView(
                         padding: const EdgeInsets.all(20),
-                        itemCount: _vehicles.length,
-                        itemBuilder: (ctx, i) => _VehicleCard(vehicle: _vehicles[i]),
+                        children: [
+                          _SearchAndFilters(
+                            onQuery: (v) => setState(() => _query = v),
+                            filter: _filter,
+                            onFilter: (v) => setState(() => _filter = v),
+                          ),
+                          const SizedBox(height: 16),
+                          ...filtered.map((vehicle) => _VehicleCard(vehicle: vehicle)),
+                          if (filtered.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 80),
+                              child: Center(child: Text('No matching vehicles', style: TextStyle(color: AppColors.textSecondary, fontFamily: 'Inter'))),
+                            ),
+                        ],
                       ),
               ),
       ),
@@ -95,15 +108,18 @@ class _VehicleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
+    return InkWell(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => VehicleDetailsScreen(vehicle: vehicle))),
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.border),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -152,6 +168,57 @@ class _VehicleCard extends StatelessWidget {
           ],
         ],
       ),
+      ),
+    );
+  }
+}
+
+class _SearchAndFilters extends StatelessWidget {
+  final ValueChanged<String> onQuery;
+  final String filter;
+  final ValueChanged<String> onFilter;
+
+  const _SearchAndFilters({required this.onQuery, required this.filter, required this.onFilter});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TextField(
+          onChanged: onQuery,
+          decoration: InputDecoration(
+            hintText: 'Search vehicle number',
+            prefixIcon: const Icon(Icons.search_rounded),
+            filled: true,
+            fillColor: AppColors.surface,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.border)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.border)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Wrap(
+            spacing: 8,
+            children: [
+              ('all', 'All'),
+              ('activated', 'Running'),
+              ('in_progress', 'Idle'),
+              ('pending', 'Offline'),
+            ].map((item) {
+              final selected = filter == item.$1;
+              return ChoiceChip(
+                label: Text(item.$2),
+                selected: selected,
+                onSelected: (_) => onFilter(item.$1),
+                selectedColor: AppColors.primary,
+                labelStyle: TextStyle(color: selected ? Colors.white : AppColors.textPrimary, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+                side: BorderSide(color: selected ? AppColors.primary : AppColors.border),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 }

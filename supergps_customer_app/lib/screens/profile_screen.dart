@@ -30,7 +30,7 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    user?.name?.substring(0, 1).toUpperCase() ?? 'U',
+                    (user?.name.isNotEmpty ?? false) ? user!.name.substring(0, 1).toUpperCase() : 'U',
                     style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Inter'),
                   ),
                 ),

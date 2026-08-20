@@ -9,10 +9,9 @@ class BottomNav extends StatelessWidget {
 
   static const _items = [
     _NavItemData(icon: Icons.home_rounded, outlineIcon: Icons.home_outlined, label: 'Home'),
-    _NavItemData(icon: Icons.storefront_rounded, outlineIcon: Icons.storefront_outlined, label: 'Shop'),
-    _NavItemData(icon: Icons.receipt_long_rounded, outlineIcon: Icons.receipt_long_outlined, label: 'Orders'),
     _NavItemData(icon: Icons.directions_car_rounded, outlineIcon: Icons.directions_car_outlined, label: 'Vehicles'),
-    _NavItemData(icon: Icons.person_rounded, outlineIcon: Icons.person_outline_rounded, label: 'Profile'),
+    _NavItemData(icon: Icons.notifications_rounded, outlineIcon: Icons.notifications_outlined, label: 'Alerts'),
+    _NavItemData(icon: Icons.grid_view_rounded, outlineIcon: Icons.grid_view_outlined, label: 'More'),
   ];
 
   @override

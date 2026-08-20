@@ -4,10 +4,9 @@ import '../providers/auth_provider.dart';
 import '../constants/colors.dart';
 import '../widgets/bottom_nav.dart';
 import 'shop_screen.dart';
-import 'orders_screen.dart';
 import 'vehicles_screen.dart';
-import 'profile_screen.dart';
 import 'help_screen.dart';
+import 'gps_feature_screens.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,10 +20,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   late final _screens = [
     _HomeTab(onNavigate: _goTo),
-    const ShopScreen(),
-    const OrdersScreen(),
     const VehiclesScreen(),
-    const ProfileScreen(),
+    const AlertsScreen(),
+    const MoreScreen(),
   ];
 
   void _goTo(int i) => setState(() => _currentIndex = i);
@@ -131,7 +129,7 @@ class _HomeTabState extends State<_HomeTab> {
               const SizedBox(height: 20),
               _buildBannerCarousel(context),
               const SizedBox(height: 24),
-              _buildSectionHeader('Your Fleet Overview', onViewAll: () => widget.onNavigate(3)),
+              _buildSectionHeader('Your Fleet Overview', onViewAll: () => widget.onNavigate(1)),
               const SizedBox(height: 14),
               _buildFleetOverview(),
               const SizedBox(height: 26),
@@ -140,11 +138,11 @@ class _HomeTabState extends State<_HomeTab> {
               const SizedBox(height: 14),
               _buildQuickActions(context),
               const SizedBox(height: 26),
-              _buildSectionHeader('Recent Alerts', onViewAll: () {}),
+              _buildSectionHeader('Recent Alerts', onViewAll: () => widget.onNavigate(2)),
               const SizedBox(height: 12),
               _buildRecentAlerts(),
               const SizedBox(height: 26),
-              _buildSectionHeader('Recently Tracked Vehicles', onViewAll: () => widget.onNavigate(3)),
+              _buildSectionHeader('Recently Tracked Vehicles', onViewAll: () => widget.onNavigate(1)),
               const SizedBox(height: 12),
               _buildTrackedVehicles(),
               const SizedBox(height: 12),
@@ -281,7 +279,7 @@ class _HomeTabState extends State<_HomeTab> {
                   style: TextStyle(color: Colors.white70, fontSize: 11.5, fontFamily: 'Inter')),
               const SizedBox(height: 14),
               ElevatedButton(
-                onPressed: () => widget.onNavigate(1),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopScreen())),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: AppColors.primary,
@@ -338,7 +336,7 @@ class _HomeTabState extends State<_HomeTab> {
                   style: TextStyle(color: Colors.white60, fontSize: 11.5, fontFamily: 'Inter')),
               const SizedBox(height: 14),
               ElevatedButton(
-                onPressed: () => widget.onNavigate(4),
+                onPressed: () => widget.onNavigate(3),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: const Color(0xFF111827),
@@ -404,10 +402,11 @@ class _HomeTabState extends State<_HomeTab> {
 
   Widget _buildQuickActions(BuildContext context) {
     final actions = [
-      (icon: Icons.add_road_rounded, label: 'Add Vehicle\n& Order', color: AppColors.primary, onTap: () => widget.onNavigate(1)),
-      (icon: Icons.toll_rounded, label: 'FASTag\nService', color: AppColors.accent, onTap: () => widget.onNavigate(1)),
-      (icon: Icons.gps_fixed_rounded, label: 'GPS\nTracker', color: AppColors.purple, onTap: () => widget.onNavigate(1)),
-      (icon: Icons.location_on_rounded, label: 'Track\nVehicle', color: AppColors.success, onTap: () => widget.onNavigate(3)),
+      (icon: Icons.add_road_rounded, label: 'Add Vehicle\n& Order', color: AppColors.primary, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopScreen()))),
+      (icon: Icons.location_on_rounded, label: 'Live\nTracking', color: AppColors.success, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveTrackingScreen()))),
+      (icon: Icons.history_rounded, label: 'Playback\nHistory', color: AppColors.purple, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PlaybackScreen()))),
+      (icon: Icons.fence_rounded, label: 'Geofence\nZones', color: AppColors.warning, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GeofenceListScreen()))),
+      (icon: Icons.summarize_rounded, label: 'Reports\nAnalytics', color: AppColors.accent, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen()))),
       (
         icon: Icons.headset_mic_rounded,
         label: 'Support\nHelp Center',

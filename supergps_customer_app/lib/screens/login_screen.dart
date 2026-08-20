@@ -137,12 +137,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               // Email
-              _buildLabel('Email Address'),
+              _buildLabel('Mobile Number / Email'),
               const SizedBox(height: 8),
               _buildTextField(
                 controller: _emailCtrl,
-                hint: 'you@email.com',
-                icon: Icons.email_outlined,
+                hint: '9876543210 or you@email.com',
+                icon: Icons.person_outline_rounded,
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 20),
@@ -160,7 +160,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
-              const SizedBox(height: 32),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Forgot password API integrate karna baaki hai')),
+                  ),
+                  child: const Text('Forgot Password?'),
+                ),
+              ),
+              const SizedBox(height: 12),
               // Login Button
               SizedBox(
                 width: double.infinity,
@@ -181,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                         )
                       : const Text(
-                          'Sign In',
+                          'Login',
                           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
                         ),
                 ),
@@ -199,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       context, MaterialPageRoute(builder: (_) => const RegisterScreen()),
                     ),
                     child: const Text(
-                      'Create Account',
+                      'Sign Up',
                       style: TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w700,

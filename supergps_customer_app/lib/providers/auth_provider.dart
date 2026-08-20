@@ -5,7 +5,6 @@ import '../services/api_service.dart';
 class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   bool _isLoading = true;
-  bool _initialized = false;
 
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
@@ -19,7 +18,6 @@ class AuthProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     await checkAuth();
-    _initialized = true;
   }
 
   Future<void> checkAuth() async {
