@@ -19,6 +19,7 @@ const defaultOrigins = [
   'http://127.0.0.1:5173',
   'http://13.211.206.24',
   'http://13.211.206.24:5173',
+  'https://supergps.vercel.app',
 ];
 
 const allowedOrigins = (process.env.CORS_ORIGIN || defaultOrigins.join(','))
