@@ -16,6 +16,21 @@ exports.startActivation = async (req, res) => {
       return res.status(400).json({ message: 'IMEI number and device serial number are required' });
     }
 
+    const dealer = await Dealer.findOne({ where: { userId: req.user.id } });
+    const dealerId = dealer ? dealer.id : order.dealerId;
+    if (req.user.role === 'dealer' && (!dealer || order.dealerId !== dealer.id)) {
+      return res.status(403).json({ message: 'This order is not assigned to your dealership' });
+    }
+
+    const existingOrderVehicle = await Vehicle.findOne({ where: { orderId } });
+    if (existingOrderVehicle) {
+      return res.json({
+        success: true,
+        message: 'Activation already started for this order',
+        vehicle: existingOrderVehicle
+      });
+    }
+
     const existingDevice = await Vehicle.findOne({ where: { imeiNumber } });
     if (existingDevice) {
       return res.status(400).json({ message: 'A device with this IMEI already exists' });
@@ -24,17 +39,6 @@ exports.startActivation = async (req, res) => {
     const existingSerial = await Vehicle.findOne({ where: { deviceSerialNumber } });
     if (existingSerial) {
       return res.status(400).json({ message: 'A device with this serial number already exists' });
-    }
-
-    const existingOrderVehicle = await Vehicle.findOne({ where: { orderId } });
-    if (existingOrderVehicle) {
-      return res.status(400).json({ message: 'Activation already started for this order' });
-    }
-
-    const dealer = await Dealer.findOne({ where: { userId: req.user.id } });
-    const dealerId = dealer ? dealer.id : order.dealerId;
-    if (req.user.role === 'dealer' && (!dealer || order.dealerId !== dealer.id)) {
-      return res.status(403).json({ message: 'This order is not assigned to your dealership' });
     }
 
     const vehicle = await Vehicle.create({

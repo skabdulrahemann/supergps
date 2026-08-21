@@ -126,7 +126,7 @@ class _OrderCard extends StatelessWidget {
           border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.035),
+                color: Colors.black.withValues(alpha: 0.035),
                 blurRadius: 14,
                 offset: const Offset(0, 8))
           ],
@@ -154,7 +154,7 @@ class _OrderCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                      color: _statusColor(order.orderStatus).withOpacity(0.1),
+                      color: _statusColor(order.orderStatus).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20)),
                   child: Text(order.orderStatus.toUpperCase(),
                       style: TextStyle(
@@ -247,7 +247,7 @@ class _OrderCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                        color: AppColors.purple.withOpacity(0.1),
+                        color: AppColors.purple.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8)),
                     child: Text(order.salesCode!,
                         style: const TextStyle(
@@ -343,11 +343,16 @@ class _OrderCard extends StatelessWidget {
   }
 
   String _nextStep(OrderModel order) {
-    if (order.isActivated) return 'Device activated. Vehicle tracking ready.';
-    if (order.dealer != null)
+    if (order.isActivated) {
+      return 'Device activated. Vehicle tracking ready.';
+    }
+    if (order.dealer != null) {
       return 'Dealer assigned. Device activation pending.';
-    if (order.paymentStatus != 'paid')
+    }
+    if (order.paymentStatus != 'paid') {
       return 'Payment pending. Admin will verify and assign dealer.';
+    }
     return 'Order placed. Admin will assign a dealer.';
   }
 }
+

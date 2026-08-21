@@ -178,7 +178,7 @@ class _ShopScreenState extends State<ShopScreen> {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.16),
+              color: Colors.black.withValues(alpha: 0.16),
               blurRadius: 20,
               offset: const Offset(0, 10))
         ],
@@ -189,7 +189,7 @@ class _ShopScreenState extends State<ShopScreen> {
             right: -20,
             top: -20,
             child: Icon(Icons.route_rounded,
-                color: Colors.white.withOpacity(0.08), size: 140),
+                color: Colors.white.withValues(alpha: 0.08), size: 140),
           ),
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,7 +264,7 @@ class _ShopScreenState extends State<ShopScreen> {
               boxShadow: selected
                   ? [
                       BoxShadow(
-                          color: AppColors.primary.withOpacity(0.24),
+                          color: AppColors.primary.withValues(alpha: 0.24),
                           blurRadius: 16,
                           offset: const Offset(0, 8))
                     ]
@@ -277,7 +277,7 @@ class _ShopScreenState extends State<ShopScreen> {
                   height: 56,
                   decoration: BoxDecoration(
                     color: selected
-                        ? Colors.white.withOpacity(0.18)
+                        ? Colors.white.withValues(alpha: 0.18)
                         : AppColors.tint(
                             isFastag ? AppColors.accent : AppColors.primary),
                     borderRadius: BorderRadius.circular(18),
@@ -411,7 +411,7 @@ class _ShopScreenState extends State<ShopScreen> {
               Switch(
                   value: _hasSalesCode,
                   onChanged: (v) => setState(() => _hasSalesCode = v),
-                  activeColor: AppColors.purple),
+                  activeThumbColor: AppColors.purple),
             ],
           ),
           if (_hasSalesCode) ...[
@@ -542,3 +542,4 @@ class _ShopScreenState extends State<ShopScreen> {
     );
   }
 }
+

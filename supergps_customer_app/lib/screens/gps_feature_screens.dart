@@ -3,19 +3,19 @@ import 'package:url_launcher/url_launcher.dart';
 import '../constants/colors.dart';
 import '../models/vehicle_model.dart';
 import '../services/api_service.dart';
+import '../widgets/super_components.dart';
 import 'help_screen.dart';
 import 'orders_screen.dart';
 import 'profile_screen.dart';
 import 'shop_screen.dart';
 
-const _demoVehicle = 'MH26CH5075';
-const _demoAddress = 'Shivaji Nagar, Nanded, Maharashtra';
+const _noVehicleTitle = 'Select a vehicle';
 
 class LiveTrackingScreen extends StatelessWidget {
   final String vehicleNumber;
   final VehicleModel? vehicle;
   const LiveTrackingScreen(
-      {super.key, this.vehicleNumber = _demoVehicle, this.vehicle});
+      {super.key, this.vehicleNumber = _noVehicleTitle, this.vehicle});
 
   Future<Map<String, dynamic>?> _loadLatest() async {
     final vehicleId = vehicle?.id;
@@ -178,7 +178,7 @@ class VehicleDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final number = vehicle?.vehicleNumber ?? _demoVehicle;
+    final number = vehicle?.vehicleNumber ?? _noVehicleTitle;
     final speed = vehicle?.speedKmh == null
         ? '0 km/h'
         : '${vehicle!.speedKmh!.round()} km/h';
@@ -192,7 +192,8 @@ class VehicleDetailsScreen extends StatelessWidget {
                     ? 'No GPS'
                     : 'Offline';
     final lastLocation = vehicle?.lastLocation ?? 'Waiting for first GPS fix';
-    final lastUpdate = vehicle?.lastSeen ?? vehicle?.lastSeenAt ?? 'Not received yet';
+    final lastUpdate =
+        vehicle?.lastSeen ?? vehicle?.lastSeenAt ?? 'Not received yet';
     final ignition = vehicle?.lastIgnition == true
         ? 'ON'
         : vehicle?.lastIgnition == false
@@ -211,8 +212,12 @@ class VehicleDetailsScreen extends StatelessWidget {
           children: [
             _VehicleHero(
                 number: number,
-                model:
-                    '${vehicle?.vehicleBrand ?? 'Maruti'} ${vehicle?.vehicleModel ?? 'Swift'}'),
+                model: [
+                      vehicle?.vehicleBrand,
+                      vehicle?.vehicleModel,
+                      vehicle?.vehicleType
+                    ].whereType<String>().where((v) => v.isNotEmpty).join(' '),
+                status: status),
             const TabBar(
               labelColor: AppColors.primary,
               unselectedLabelColor: AppColors.textSecondary,
@@ -250,25 +255,6 @@ class VehicleDetailsScreen extends StatelessWidget {
                         _Line(Icons.access_time_rounded, 'Last Update',
                             lastUpdate),
                       ]),
-                      const SizedBox(height: 14),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          _CommandChip(
-                              label: 'Engine Off',
-                              icon: Icons.power_settings_new_rounded,
-                              color: AppColors.error),
-                          _CommandChip(
-                              label: 'Lock',
-                              icon: Icons.lock_rounded,
-                              color: AppColors.purple),
-                          _CommandChip(
-                              label: 'Refresh',
-                              icon: Icons.refresh_rounded,
-                              color: AppColors.primary),
-                        ],
-                      ),
                     ],
                   ),
                   _SimpleList(items: [
@@ -277,16 +263,18 @@ class VehicleDetailsScreen extends StatelessWidget {
                     'SIM: ${vehicle?.simNumber ?? 'Not assigned'}',
                     'Activation: ${vehicle?.activationStatus ?? 'pending'}'
                   ]),
-                  const _SimpleList(items: [
-                    'Overspeed • Today 5:42 PM',
-                    'Ignition ON • Today 4:08 PM',
-                    'Geofence Exit • Yesterday'
-                  ]),
-                  const _SimpleList(items: [
-                    'Trip: 42 km • Today',
-                    'Stop: 18 min • Railway Station',
-                    'Playback available for last 90 days'
-                  ]),
+                  const EmptyState(
+                    icon: Icons.notifications_active_rounded,
+                    title: 'No alerts for this vehicle',
+                    subtitle:
+                        'Vehicle alerts will appear after alert rules and live tracking data are connected.',
+                  ),
+                  const EmptyState(
+                    icon: Icons.route_rounded,
+                    title: 'No trip history yet',
+                    subtitle:
+                        'Trips, stops and playback history will appear after GPS positions are saved.',
+                  ),
                 ],
               ),
             ),
@@ -302,299 +290,96 @@ class PlaybackScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Page(
+    return const _Page(
       title: 'Playback',
-      child: Column(
-        children: [
-          Expanded(
-            child: _MapMock(
-                title: _demoVehicle,
-                subtitle: 'Route playback • 86.4 km',
-                icon: Icons.play_arrow_rounded,
-                route: true),
-          ),
-          _BottomSheetCard(
-            children: [
-              const Row(
-                children: [
-                  Expanded(
-                      child:
-                          _SmallField(label: 'Vehicle', value: _demoVehicle)),
-                  SizedBox(width: 10),
-                  Expanded(child: _SmallField(label: 'Date', value: 'Today')),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Slider(value: 0.42, onChanged: (_) {}),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton.filled(
-                      onPressed: () {},
-                      icon: const Icon(Icons.play_arrow_rounded)),
-                  const Text('1x',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w800, fontFamily: 'Inter')),
-                  const Text('2x',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w800, fontFamily: 'Inter')),
-                  const Text('4x',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w800, fontFamily: 'Inter')),
-                ],
-              ),
-            ],
-          ),
-        ],
+      child: EmptyState(
+        icon: Icons.history_rounded,
+        title: 'No playback data yet',
+        subtitle:
+            'Trip playback will appear after a vehicle sends GPS history to the server.',
       ),
     );
   }
 }
-
 class AlertsScreen extends StatelessWidget {
   const AlertsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final alerts = [
-      (
-        'Overspeed Alert',
-        'High',
-        _demoVehicle,
-        'Today, 6:12 PM',
-        AppColors.error,
-        Icons.speed_rounded
-      ),
-      (
-        'Geofence Exit',
-        'Medium',
-        'MH26AB1234',
-        'Today, 4:05 PM',
-        AppColors.warning,
-        Icons.fence_rounded
-      ),
-      (
-        'Ignition ON',
-        'Low',
-        'MH15JK6789',
-        'Yesterday',
-        AppColors.success,
-        Icons.vpn_key_rounded
-      ),
-      (
-        'Power Disconnect',
-        'High',
-        _demoVehicle,
-        '18 Aug 2026',
-        AppColors.error,
-        Icons.power_off_rounded
-      ),
-    ];
-    return DefaultTabController(
-      length: 3,
-      child: _Page(
-        title: 'Alerts',
-        action: IconButton(
-          icon: const Icon(Icons.tune_rounded),
-          onPressed: () {},
-        ),
-        child: Column(
-          children: [
-            const TabBar(
-              labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.textSecondary,
-              indicatorColor: AppColors.primary,
-              tabs: [
-                Tab(text: 'All'),
-                Tab(text: 'Today'),
-                Tab(text: 'This Week')
-              ],
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(18),
-                itemCount: alerts.length,
-                itemBuilder: (_, i) {
-                  final a = alerts[i];
-                  return _FeatureTile(
-                    icon: a.$6,
-                    color: a.$5,
-                    title: a.$1,
-                    subtitle: '${a.$3} • ${a.$4}',
-                    trailing: a.$2,
-                    onTap: () => _showAlertDetail(context, a.$1, a.$3, a.$4),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showAlertDetail(
-      BuildContext context, String title, String vehicle, String time) {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Inter')),
-            const SizedBox(height: 14),
-            _InfoLine(
-                icon: Icons.directions_car_rounded,
-                label: 'Vehicle',
-                value: vehicle),
-            _InfoLine(
-                icon: Icons.access_time_rounded, label: 'Time', value: time),
-            const _InfoLine(
-                icon: Icons.location_on_rounded,
-                label: 'Location',
-                value: _demoAddress),
-          ],
-        ),
+    return const _Page(
+      title: 'Alerts',
+      child: EmptyState(
+        icon: Icons.notifications_active_rounded,
+        title: 'No alerts yet',
+        subtitle:
+            'Overspeed, ignition and geofence alerts will appear here after live tracking data starts.',
       ),
     );
   }
 }
-
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final reports = [
-      ('Daily Report', Icons.today_rounded, AppColors.primary),
-      ('Trip Report', Icons.route_rounded, AppColors.success),
-      ('Summary Report', Icons.summarize_rounded, AppColors.purple),
-      ('Stoppage Report', Icons.pause_circle_rounded, AppColors.warning),
-      ('Speed Report', Icons.speed_rounded, AppColors.error),
-      ('Fuel Report', Icons.local_gas_station_rounded, AppColors.accent),
-    ];
-    return _Page(
+    return const _Page(
       title: 'Reports',
-      child: ListView(
-        padding: const EdgeInsets.all(18),
-        children: [
-          const Row(
-            children: [
-              Expanded(
-                  child: _SmallField(label: 'Vehicle', value: _demoVehicle)),
-              SizedBox(width: 10),
-              Expanded(child: _SmallField(label: 'Range', value: 'This Week')),
-            ],
-          ),
-          const SizedBox(height: 18),
-          ...reports.map((r) => _FeatureTile(
-                icon: r.$2,
-                color: r.$3,
-                title: r.$1,
-                subtitle: 'Generate, export PDF/Excel aur WhatsApp share',
-                trailing: 'Generate',
-                onTap: () {},
-              )),
-        ],
+      child: EmptyState(
+        icon: Icons.summarize_rounded,
+        title: 'No reports available',
+        subtitle:
+            'Reports will be generated from real trip, stop and speed history once GPS data is received.',
       ),
     );
   }
 }
-
 class GeofenceListScreen extends StatelessWidget {
   const GeofenceListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final zones = ['Home', 'Office', 'Warehouse', 'Work Site'];
-    return _Page(
+    return const _Page(
       title: 'Geofence',
-      action: IconButton(
-        icon: const Icon(Icons.add_circle_outline_rounded),
-        onPressed: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const AddGeofenceScreen())),
-      ),
-      child: ListView(
-        padding: const EdgeInsets.all(18),
-        children: zones
-            .map((z) => _FeatureTile(
-                  icon: Icons.fence_rounded,
-                  color: AppColors.primary,
-                  title: z,
-                  subtitle: '500 m radius • Entry/Exit enabled',
-                  trailing: 'Active',
-                  onTap: () {},
-                ))
-            .toList(),
+      child: EmptyState(
+        icon: Icons.fence_rounded,
+        title: 'No geofences yet',
+        subtitle:
+            'Geofence creation needs map selection and backend storage before zones can be shown here.',
       ),
     );
   }
 }
-
 class AddGeofenceScreen extends StatelessWidget {
   const AddGeofenceScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return _Page(
+    return const _Page(
       title: 'Add Geofence',
-      child: ListView(
-        padding: const EdgeInsets.all(18),
-        children: [
-          const SizedBox(
-              height: 260,
-              child: _MapMock(
-                  title: 'Choose center',
-                  subtitle: _demoAddress,
-                  icon: Icons.add_location_alt_rounded)),
-          const SizedBox(height: 16),
-          const _SmallField(label: 'Geofence Name', value: 'Home'),
-          const SizedBox(height: 12),
-          const _SmallField(label: 'Radius', value: '500 m'),
-          const SizedBox(height: 12),
-          const _SmallField(label: 'Vehicles', value: 'All vehicles'),
-          SwitchListTile(
-            value: true,
-            onChanged: (_) {},
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Entry/Exit Alerts',
-                style: TextStyle(
-                    fontWeight: FontWeight.w800, fontFamily: 'Inter')),
-          ),
-          const SizedBox(height: 18),
-          _PrimaryButton(
-              label: 'Save Geofence', onTap: () => Navigator.pop(context)),
-        ],
+      child: EmptyState(
+        icon: Icons.add_location_alt_rounded,
+        title: 'Geofence setup is not connected',
+        subtitle:
+            'This screen should use real map coordinates and saved vehicle selections before it is enabled.',
       ),
     );
   }
 }
-
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return _Page(
+    return const _Page(
       title: 'Notifications',
-      action: TextButton(onPressed: () {}, child: const Text('Mark all read')),
-      child: const _SimpleList(items: [
-        'Renewal due in 12 days',
-        'Server maintenance completed',
-        'SOS alert resolved for MH26CH5075',
-        'New fuel sensor product available',
-      ]),
+      child: EmptyState(
+        icon: Icons.notifications_rounded,
+        title: 'No notifications',
+        subtitle: 'Account, order and vehicle notifications will appear here.',
+      ),
     );
   }
 }
-
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -605,47 +390,48 @@ class SettingsScreen extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(18),
         children: [
-          _FeatureTile(
-              icon: Icons.person_rounded,
-              color: AppColors.primary,
-              title: 'Profile',
-              subtitle: 'Name, mobile, email',
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const ProfileScreen()))),
+          const _SettingsGroupTitle('Account'),
           _FeatureTile(
               icon: Icons.lock_rounded,
-              color: AppColors.purple,
-              title: 'Change Password',
-              subtitle: 'Update login password',
-              onTap: () {}),
+              color: AppColors.primary,
+              title: 'Security',
+              subtitle: 'App lock, command PIN and login protection',
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const SecurityScreen()))),
           _FeatureTile(
               icon: Icons.notifications_active_rounded,
-              color: AppColors.warning,
-              title: 'Notification Settings',
-              subtitle: 'Alert preferences',
-              onTap: () {}),
+              color: AppColors.primary,
+              title: 'Notifications',
+              subtitle: 'Order, tracking and service alerts',
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const NotificationsScreen()))),
+          const SizedBox(height: 12),
+          const _SettingsGroupTitle('App Preferences'),
           _FeatureTile(
               icon: Icons.speed_rounded,
-              color: AppColors.success,
+              color: AppColors.primary,
               title: 'Units',
-              subtitle: 'km/h',
+              subtitle: 'Speed: km/h',
               onTap: () {}),
           _FeatureTile(
               icon: Icons.language_rounded,
-              color: AppColors.accent,
+              color: AppColors.primary,
               title: 'Language',
-              subtitle: 'English / Hindi / Marathi',
-              onTap: () {}),
+              subtitle: 'English, Hindi and Marathi',
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const LanguageScreen()))),
+          const SizedBox(height: 12),
+          const _SettingsGroupTitle('Support'),
           _FeatureTile(
               icon: Icons.help_rounded,
               color: AppColors.primary,
               title: 'Help & Support',
-              subtitle: 'Chat, call, ticket',
+              subtitle: 'Chat, call or create a ticket',
               onTap: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const HelpScreen()))),
           _FeatureTile(
               icon: Icons.info_rounded,
-              color: AppColors.textSecondary,
+              color: AppColors.primary,
               title: 'About App',
               subtitle: 'SuperGPS v1.0.0',
               onTap: () {}),
@@ -654,7 +440,6 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 }
-
 class ServicesScreen extends StatelessWidget {
   const ServicesScreen({super.key});
 
@@ -821,13 +606,14 @@ class RenewalScreen extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(18),
         children: [
-          _InfoBanner(
-              title: 'Renewal due in 12 days',
-              subtitle: 'Plan: Super GPS Pro • Expiry: 01 Sep 2026',
-              icon: Icons.workspace_premium_rounded),
-          const SizedBox(height: 16),
+          const EmptyState(
+            icon: Icons.workspace_premium_rounded,
+            title: 'No renewal due',
+            subtitle:
+                'Your renewal status will appear here when subscription data is available.',
+          ),
           _PrimaryButton(
-              label: 'Contact for Renewal',
+              label: 'Contact Support',
               onTap: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const HelpScreen()))),
         ],
@@ -835,7 +621,6 @@ class RenewalScreen extends StatelessWidget {
     );
   }
 }
-
 class DeviceDetailsScreen extends StatelessWidget {
   const DeviceDetailsScreen({super.key});
 
@@ -843,18 +628,15 @@ class DeviceDetailsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const _Page(
       title: 'Device Details',
-      child: _SimpleList(items: [
-        'Device Model: SG-4G-Pro',
-        'IMEI: 861234567890123',
-        'SIM: Active',
-        'GPS: Online',
-        'Network: Strong',
-        'Firmware: v2.4.1',
-      ]),
+      child: EmptyState(
+        icon: Icons.memory_rounded,
+        title: 'Select a vehicle first',
+        subtitle:
+            'Device IMEI, SIM, firmware and GPS status should come from the assigned vehicle record.',
+      ),
     );
   }
 }
-
 class VehicleDocumentsScreen extends StatelessWidget {
   const VehicleDocumentsScreen({super.key});
 
@@ -862,133 +644,47 @@ class VehicleDocumentsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const _Page(
       title: 'Vehicle Documents',
-      child: _SimpleList(items: [
-        'RC Book • Uploaded',
-        'Insurance • Expiring soon',
-        'PUC • Valid',
-        'Permit • Not uploaded',
-      ]),
+      child: EmptyState(
+        icon: Icons.description_rounded,
+        title: 'No documents uploaded',
+        subtitle:
+            'RC, insurance, PUC and permit documents will appear after document upload is connected.',
+      ),
     );
   }
 }
-
-class EngineLockScreen extends StatefulWidget {
+class EngineLockScreen extends StatelessWidget {
   const EngineLockScreen({super.key});
 
   @override
-  State<EngineLockScreen> createState() => _EngineLockScreenState();
-}
-
-class _EngineLockScreenState extends State<EngineLockScreen> {
-  bool _locked = false;
-  String _state = 'Ready';
-
-  void _confirmCommand(bool lock) {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(22, 8, 22, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(lock ? 'Lock Engine?' : 'Enable Engine?',
-                style: const TextStyle(
-                    fontSize: 21,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Inter')),
-            const SizedBox(height: 10),
-            const Text(
-              'Vehicle must be safely stationary before engine immobilization. This command requires customer authorization and backend audit.',
-              style: TextStyle(
-                  color: AppColors.textSecondary,
-                  height: 1.45,
-                  fontFamily: 'Inter'),
-            ),
-            const SizedBox(height: 18),
-            _PrimaryButton(
-              label: lock ? 'Confirm Lock Engine' : 'Confirm Enable Engine',
-              onTap: () {
-                Navigator.pop(context);
-                setState(() {
-                  _locked = lock;
-                  _state = lock ? 'Command Accepted' : 'Engine Enabled';
-                });
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return _Page(
+    return const _Page(
       title: 'Engine Lock',
-      child: ListView(
-        padding: const EdgeInsets.all(18),
-        children: [
-          _InfoBanner(
-            title: _locked ? 'ENGINE LOCKED' : 'ENGINE ACTIVE',
-            subtitle: 'MH26CH5075 - Last command: $_state',
-            icon: _locked ? Icons.lock_rounded : Icons.lock_open_rounded,
-          ),
-          const SizedBox(height: 16),
-          _PrimaryButton(
-              label: _locked ? 'Enable Engine' : 'Lock Engine',
-              onTap: () => _confirmCommand(!_locked)),
-        ],
+      child: EmptyState(
+        icon: Icons.lock_rounded,
+        title: 'Engine commands are disabled',
+        subtitle:
+            'This action requires a connected vehicle, command PIN, backend audit and supported immobilizer hardware.',
       ),
     );
   }
 }
-
 class ShareLocationScreen extends StatelessWidget {
   const ShareLocationScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final durations = [
-      '15 Minutes',
-      '30 Minutes',
-      '1 Hour',
-      '3 Hours',
-      '24 Hours',
-      'Custom'
-    ];
-    return _Page(
+    return const _Page(
       title: 'Share Live Location',
-      child: ListView(
-        padding: const EdgeInsets.all(18),
-        children: [
-          const _SmallField(label: 'Vehicle', value: _demoVehicle),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: durations
-                .map((d) => ActionChip(label: Text(d), onPressed: () {}))
-                .toList(),
-          ),
-          const SizedBox(height: 18),
-          _PrimaryButton(label: 'Generate Secure Link', onTap: () {}),
-          const SizedBox(height: 18),
-          _FeatureTile(
-            icon: Icons.link_rounded,
-            color: AppColors.success,
-            title: 'Active link',
-            subtitle: 'Expires in 54 minutes',
-            trailing: 'Stop',
-            onTap: () {},
-          ),
-        ],
+      child: EmptyState(
+        icon: Icons.share_location_rounded,
+        title: 'No live location to share',
+        subtitle:
+            'A secure share link can be generated after a vehicle has a latest GPS position.',
       ),
     );
   }
 }
-
 class FastagScreen extends StatelessWidget {
   const FastagScreen({super.key});
 
@@ -999,29 +695,14 @@ class FastagScreen extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(18),
         children: [
-          _InfoBanner(
-              title: 'MH26CH5075',
-              subtitle: 'Active - HDFC FASTag - Balance where supported',
-              icon: Icons.toll_rounded),
-          const SizedBox(height: 14),
-          _FeatureTile(
-              icon: Icons.account_balance_wallet_rounded,
-              color: AppColors.primary,
-              title: 'Recharge FASTag',
-              subtitle: 'UPI, cards and net banking',
-              trailing: 'Recharge',
-              onTap: () {}),
-          _FeatureTile(
-              icon: Icons.receipt_long_rounded,
-              color: AppColors.info,
-              title: 'Transaction History',
-              subtitle: 'Last debit: Toll Plaza - Rs 95',
-              onTap: () {}),
-          _FeatureTile(
-              icon: Icons.support_agent_rounded,
-              color: AppColors.success,
-              title: 'FASTag Support',
-              subtitle: 'KYC, replacement and status help',
+          const EmptyState(
+            icon: Icons.toll_rounded,
+            title: 'FASTag is not linked',
+            subtitle:
+                'Recharge, balance and transactions will show after a real FASTag account is connected.',
+          ),
+          _PrimaryButton(
+              label: 'Contact Support',
               onTap: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const HelpScreen()))),
         ],
@@ -1029,7 +710,6 @@ class FastagScreen extends StatelessWidget {
     );
   }
 }
-
 class FuelMonitoringScreen extends StatelessWidget {
   const FuelMonitoringScreen({super.key});
 
@@ -1037,80 +717,57 @@ class FuelMonitoringScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const _Page(
       title: 'Fuel Monitoring',
-      child: _SimpleList(items: [
-        'Fuel Level: 72%',
-        'Estimated Litres: 38 L',
-        'Daily Consumption: 12.4 L',
-        'Fuel Drop Alerts: Enabled',
-        'Fuel vs Time graph requires supported sensor data',
-      ]),
+      child: EmptyState(
+        icon: Icons.local_gas_station_rounded,
+        title: 'No fuel sensor data',
+        subtitle:
+            'Fuel level, consumption and drop alerts require a supported sensor and backend readings.',
+      ),
     );
   }
 }
-
 class DriversScreen extends StatelessWidget {
   const DriversScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return _Page(
+    return const _Page(
       title: 'Drivers',
-      action: IconButton(icon: const Icon(Icons.add_rounded), onPressed: () {}),
-      child: ListView(
-        padding: const EdgeInsets.all(18),
-        children: [
-          _FeatureTile(
-              icon: Icons.badge_rounded,
-              color: AppColors.success,
-              title: 'Ramesh Patil',
-              subtitle: '+91 98765 43210 - Assigned: MH26CH5075',
-              trailing: 'Call',
-              onTap: () {}),
-          _FeatureTile(
-              icon: Icons.badge_rounded,
-              color: AppColors.warning,
-              title: 'Amit Shinde',
-              subtitle: '+91 91234 56780 - No vehicle assigned',
-              trailing: 'Assign',
-              onTap: () {}),
-        ],
+      child: EmptyState(
+        icon: Icons.badge_rounded,
+        title: 'No drivers added',
+        subtitle:
+            'Driver profiles and vehicle assignments will appear after driver management is connected.',
       ),
     );
   }
 }
-
 class InvoiceScreen extends StatelessWidget {
   const InvoiceScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return _Page(
+    return const _Page(
       title: 'Invoices',
-      child: ListView(
-        padding: const EdgeInsets.all(18),
-        children: [
-          _FeatureTile(
-              icon: Icons.description_rounded,
-              color: AppColors.primary,
-              title: 'INV-2026-0091',
-              subtitle: 'GPS Renewal - Rs 2,950 - Paid',
-              trailing: 'PDF',
-              onTap: () {}),
-          _FeatureTile(
-              icon: Icons.description_rounded,
-              color: AppColors.info,
-              title: 'INV-2026-0044',
-              subtitle: 'FASTag Service - Rs 500 - Paid',
-              trailing: 'Share',
-              onTap: () {}),
-        ],
+      child: EmptyState(
+        icon: Icons.description_rounded,
+        title: 'No invoices yet',
+        subtitle:
+            'Paid order and renewal invoices will appear here after billing is connected.',
       ),
     );
   }
 }
-
-class SecurityScreen extends StatelessWidget {
+class SecurityScreen extends StatefulWidget {
   const SecurityScreen({super.key});
+
+  @override
+  State<SecurityScreen> createState() => _SecurityScreenState();
+}
+
+class _SecurityScreenState extends State<SecurityScreen> {
+  bool _biometricLogin = false;
+  bool _appLock = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1119,36 +776,58 @@ class SecurityScreen extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(18),
         children: [
-          SwitchListTile(
-              value: true,
-              onChanged: (_) {},
-              title: const Text('Biometric Login',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w800, fontFamily: 'Inter'))),
-          SwitchListTile(
-              value: true,
-              onChanged: (_) {},
-              title: const Text('App Lock',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w800, fontFamily: 'Inter'))),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Login Security',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'Inter')),
+                const SizedBox(height: 10),
+                _CompactSwitchTile(
+                  icon: Icons.fingerprint_rounded,
+                  title: 'Biometric Login',
+                  subtitle: 'Use device biometrics when supported',
+                  value: _biometricLogin,
+                  onChanged: (value) => setState(() => _biometricLogin = value),
+                ),
+                const Divider(height: 18),
+                _CompactSwitchTile(
+                  icon: Icons.phonelink_lock_rounded,
+                  title: 'App Lock',
+                  subtitle: 'Ask for unlock when the app opens',
+                  value: _appLock,
+                  onChanged: (value) => setState(() => _appLock = value),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
           _FeatureTile(
               icon: Icons.pin_rounded,
-              color: AppColors.danger,
+              color: AppColors.primary,
               title: 'Sensitive Command PIN',
-              subtitle: 'Required for engine commands',
+              subtitle: 'Required before engine commands are enabled',
               onTap: () {}),
           _FeatureTile(
               icon: Icons.password_rounded,
-              color: AppColors.textPrimary,
+              color: AppColors.primary,
               title: 'Change Password',
-              subtitle: 'Update your login password',
+              subtitle: 'Password update will be connected to account API',
               onTap: () {}),
         ],
       ),
     );
   }
 }
-
 class LanguageScreen extends StatelessWidget {
   const LanguageScreen({super.key});
 
@@ -1179,6 +858,88 @@ class LegalScreen extends StatelessWidget {
               fontFamily: 'Inter'),
         ),
       ),
+    );
+  }
+}
+
+class _SettingsGroupTitle extends StatelessWidget {
+  final String title;
+  const _SettingsGroupTitle(this.title);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 6, 2, 10),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+          fontFamily: 'Inter',
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactSwitchTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _CompactSwitchTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AppColors.softYellow,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: AppColors.textPrimary, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w900, fontFamily: 'Inter')),
+              const SizedBox(height: 2),
+              Text(subtitle,
+                  style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontFamily: 'Inter')),
+            ],
+          ),
+        ),
+        Transform.scale(
+          scale: 0.82,
+          child: Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.textPrimary,
+            activeTrackColor: AppColors.primary,
+            inactiveThumbColor: AppColors.textMuted,
+            inactiveTrackColor: AppColors.border,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1239,7 +1000,7 @@ class _MapMock extends StatelessWidget {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                        color: AppColors.primary.withOpacity(0.28),
+                        color: AppColors.primary.withValues(alpha: 0.28),
                         blurRadius: 18,
                         offset: const Offset(0, 8)),
                   ]),
@@ -1268,7 +1029,7 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final grid = Paint()
-      ..color = Colors.white.withOpacity(0.75)
+      ..color = Colors.white.withValues(alpha: 0.75)
       ..strokeWidth = 1;
     for (double x = 0; x < size.width; x += 42) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
@@ -1356,7 +1117,12 @@ class _StatusRow extends StatelessWidget {
 class _VehicleHero extends StatelessWidget {
   final String number;
   final String model;
-  const _VehicleHero({required this.number, required this.model});
+  final String status;
+  const _VehicleHero({
+    required this.number,
+    required this.model,
+    required this.status,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1381,12 +1147,14 @@ class _VehicleHero extends StatelessWidget {
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
                         fontFamily: 'Inter')),
-                Text(model,
+                Text(model.isEmpty ? 'Vehicle details pending' : model,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                         color: Colors.white70, fontFamily: 'Inter')),
               ])),
-          const Text('Running',
-              style: TextStyle(
+          Text(status,
+              style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
                   fontFamily: 'Inter')),
@@ -1646,55 +1414,6 @@ class _InfoPanel extends StatelessWidget {
   }
 }
 
-class _CommandChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  const _CommandChip(
-      {required this.label, required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return ActionChip(
-      avatar: Icon(icon, color: color, size: 18),
-      label: Text(label,
-          style: TextStyle(
-              color: color, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
-      onPressed: () {},
-      backgroundColor: AppColors.tint(color),
-      side: BorderSide(color: color.withOpacity(0.18)),
-    );
-  }
-}
-
-class _SmallField extends StatelessWidget {
-  final String label;
-  final String value;
-  const _SmallField({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-                fontFamily: 'Inter')),
-        const SizedBox(height: 4),
-        Text(value,
-            style: const TextStyle(
-                fontWeight: FontWeight.w900, fontFamily: 'Inter')),
-      ]),
-    );
-  }
-}
-
 class _SimpleList extends StatelessWidget {
   final List<String> items;
   const _SimpleList({required this.items});
@@ -1739,3 +1458,5 @@ class _PrimaryButton extends StatelessWidget {
     );
   }
 }
+
+

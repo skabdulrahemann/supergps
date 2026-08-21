@@ -32,7 +32,8 @@ class AuthProvider extends ChangeNotifier {
         if (res['success'] == true && res['user'] != null) {
           _user = UserModel.fromJson(res['user']);
           // Handle dealerProfile from response
-          if (res.containsKey('dealerProfile') && res['dealerProfile'] != null) {
+          if (res.containsKey('dealerProfile') &&
+              res['dealerProfile'] != null) {
             _dealerProfile = Map<String, dynamic>.from(res['dealerProfile']);
           } else {
             _dealerProfile = null;

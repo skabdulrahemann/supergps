@@ -31,8 +31,8 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-primary-600/30">
-            <Shield className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 bg-primary-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-primary-500/25">
+            <Shield className="w-8 h-8 text-dark-950" />
           </div>
           <h1 className="text-white text-2xl font-bold">SuperGPS Admin</h1>
           <p className="text-dark-400 mt-1">Sign in to your dashboard</p>
@@ -83,7 +83,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-all duration-200 shadow-lg shadow-primary-600/25 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-3 bg-primary-500 text-dark-950 rounded-xl font-bold hover:bg-primary-400 transition-all duration-200 shadow-lg shadow-primary-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In'}
             </button>

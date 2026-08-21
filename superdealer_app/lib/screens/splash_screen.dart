@@ -12,7 +12,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnim;
   late Animation<double> _fadeAnim;
@@ -20,12 +21,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800));
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1800));
     _scaleAnim = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
     _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.3, 1.0, curve: Curves.easeOut)),
+      CurvedAnimation(
+          parent: _controller,
+          curve: const Interval(0.3, 1.0, curve: Curves.easeOut)),
     );
     _controller.forward();
     _navigate();
@@ -40,9 +44,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     }
     if (!mounted) return;
     if (auth.isLoggedIn) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (_) => const HomeScreen()));
     } else {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (_) => const LoginScreen()));
     }
   }
 
@@ -56,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+        decoration: const BoxDecoration(gradient: AppColors.darkGradient),
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -67,11 +73,17 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   width: 120,
                   height: 120,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(36),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 40, offset: const Offset(0, 16))],
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 40,
+                          offset: const Offset(0, 16))
+                    ],
                   ),
-                  child: const Icon(Icons.storefront_rounded, size: 60, color: AppColors.primary),
+                  child: const Icon(Icons.storefront_rounded,
+                      size: 60, color: AppColors.textPrimary),
                 ),
               ),
               const SizedBox(height: 32),
@@ -79,9 +91,20 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 opacity: _fadeAnim,
                 child: const Column(
                   children: [
-                    Text('SuperDealer', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Inter', letterSpacing: -1)),
+                    Text('SuperDealer',
+                        style: TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.primary,
+                            fontFamily: 'Inter',
+                            letterSpacing: -1)),
                     SizedBox(height: 8),
-                    Text('Dealer & Technician Portal', style: TextStyle(fontSize: 16, color: Colors.white70, fontFamily: 'Inter', letterSpacing: 2)),
+                    Text('Dealer & Technician Portal',
+                        style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white70,
+                            fontFamily: 'Inter',
+                            letterSpacing: 2)),
                   ],
                 ),
               ),
@@ -91,7 +114,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 child: const SizedBox(
                   width: 32,
                   height: 32,
-                  child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(Colors.white), backgroundColor: Colors.white24),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      backgroundColor: Colors.white24),
                 ),
               ),
             ],

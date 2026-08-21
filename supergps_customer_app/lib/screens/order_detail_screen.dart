@@ -163,7 +163,7 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20)),
       child: Text(label,
           style: TextStyle(
@@ -241,3 +241,4 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
+

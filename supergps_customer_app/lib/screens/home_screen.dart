@@ -418,20 +418,14 @@ class CustomerAccountTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<AuthProvider>().user;
+    final name = user?.name.isNotEmpty == true ? user!.name : 'Customer';
+    final initial = name.characters.first.toUpperCase();
     final items = [
       ('Personal Details', Icons.person_rounded, const ProfileScreen()),
       ('My Vehicles', Icons.local_shipping_rounded, const VehiclesScreen()),
-      ('Drivers', Icons.badge_rounded, const DriversScreen()),
       ('Orders', Icons.receipt_long_rounded, const OrdersScreen()),
-      ('Invoices', Icons.description_rounded, const InvoiceScreen()),
       ('Renewals', Icons.workspace_premium_rounded, const RenewalScreen()),
-      (
-        'Notifications',
-        Icons.notifications_rounded,
-        const NotificationsScreen()
-      ),
-      ('Security', Icons.lock_rounded, const SecurityScreen()),
-      ('Language', Icons.language_rounded, const LanguageScreen()),
       ('Support', Icons.support_agent_rounded, const HelpScreen()),
       ('Settings', Icons.settings_rounded, const SettingsScreen()),
     ];
@@ -444,30 +438,34 @@ class CustomerAccountTab extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const SuperCard(
+          SuperCard(
             child: Row(
               children: [
                 CircleAvatar(
                     radius: 28,
                     backgroundColor: AppColors.textPrimary,
-                    child: Text('A',
-                        style: TextStyle(
+                    child: Text(initial,
+                        style: const TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w900,
                             fontSize: 20))),
-                SizedBox(width: 14),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Abdul Shaikh',
-                          style: TextStyle(
+                      Text(name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w900)),
-                      SizedBox(height: 2),
-                      Text('+91 98765 43210',
-                          style: TextStyle(color: AppColors.textSecondary)),
-                      Text('abdul@example.com',
-                          style: TextStyle(
+                      const SizedBox(height: 2),
+                      Text(user?.phone.isNotEmpty == true ? user!.phone : 'Phone not added',
+                          style: const TextStyle(color: AppColors.textSecondary)),
+                      Text(user?.email.isNotEmpty == true ? user!.email : 'Email not added',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
                               color: AppColors.textMuted, fontSize: 12)),
                     ],
                   ),

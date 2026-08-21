@@ -34,7 +34,7 @@
     @apply flex items-center gap-3 px-4 py-3 text-dark-400 rounded-xl transition-all duration-200 hover:bg-dark-800 hover:text-white;
   }
   .sidebar-link.active {
-    @apply bg-primary-600 text-white shadow-lg shadow-primary-600/30;
+    @apply bg-primary-500 text-dark-950 shadow-lg shadow-primary-500/25;
   }
   .card {
     @apply bg-white rounded-2xl border border-dark-100 shadow-sm p-6;
@@ -43,7 +43,7 @@
     @apply bg-dark-900 rounded-2xl border border-dark-800 p-6;
   }
   .btn-primary {
-    @apply px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-all duration-200 shadow-lg shadow-primary-600/20;
+    @apply px-5 py-2.5 bg-primary-500 text-dark-950 rounded-xl font-bold hover:bg-primary-400 transition-all duration-200 shadow-lg shadow-primary-500/20;
   }
   .btn-secondary {
     @apply px-5 py-2.5 bg-dark-100 text-dark-700 rounded-xl font-medium hover:bg-dark-200 transition-all duration-200;
@@ -63,7 +63,7 @@
   .badge-green { @apply bg-emerald-50 text-emerald-700 border border-emerald-200; }
   .badge-yellow { @apply bg-amber-50 text-amber-700 border border-amber-200; }
   .badge-red { @apply bg-rose-50 text-rose-700 border border-rose-200; }
-  .badge-blue { @apply bg-primary-50 text-primary-700 border border-primary-200; }
+  .badge-blue { @apply bg-sky-50 text-sky-700 border border-sky-200; }
   .badge-purple { @apply bg-purple-50 text-purple-700 border border-purple-200; }
 }
 

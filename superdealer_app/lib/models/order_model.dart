@@ -18,6 +18,7 @@ class OrderModel {
   final bool isActivated;
   final String? createdAt;
   final Map<String, dynamic>? customer;
+  final List<Map<String, dynamic>> vehicles;
 
   OrderModel({
     required this.id,
@@ -39,9 +40,11 @@ class OrderModel {
     required this.isActivated,
     this.createdAt,
     this.customer,
+    this.vehicles = const [],
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
+    final vehiclesJson = json['vehicles'];
     return OrderModel(
       id: json['id'] ?? '',
       orderNumber: json['orderNumber'] ?? '',
@@ -62,6 +65,12 @@ class OrderModel {
       isActivated: json['isActivated'] ?? false,
       createdAt: json['createdAt'],
       customer: json['customer'],
+      vehicles: vehiclesJson is List
+          ? vehiclesJson
+              .whereType<Map>()
+              .map((vehicle) => Map<String, dynamic>.from(vehicle))
+              .toList()
+          : const [],
     );
   }
 }

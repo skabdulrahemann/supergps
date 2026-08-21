@@ -117,9 +117,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   padding: const EdgeInsets.all(14),
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.08),
+                    color: AppColors.error.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.error.withOpacity(0.2)),
+                    border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     children: [
@@ -271,3 +271,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
+

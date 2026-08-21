@@ -28,7 +28,7 @@ class ProfileScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
+                        color: AppColors.primary.withValues(alpha: 0.3),
                         blurRadius: 20,
                         offset: const Offset(0, 8))
                   ],
@@ -58,7 +58,7 @@ class ProfileScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                 decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20)),
                 child: Text((user?.role ?? 'customer').toUpperCase(),
                     style: const TextStyle(
@@ -110,7 +110,7 @@ class ProfileScreen extends StatelessWidget {
                           color: AppColors.error,
                           fontFamily: 'Inter')),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.error.withOpacity(0.08),
+                    backgroundColor: AppColors.error.withValues(alpha: 0.08),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
@@ -157,7 +157,7 @@ class _InfoCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14)),
             child: Icon(icon, color: color, size: 22),
           ),
@@ -186,3 +186,4 @@ class _InfoCard extends StatelessWidget {
     );
   }
 }
+

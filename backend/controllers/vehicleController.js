@@ -159,8 +159,31 @@ exports.updateVehicle = async (req, res) => {
     fields.forEach((f) => {
       if (req.body[f] !== undefined) vehicle[f] = req.body[f];
     });
+    const activationStatusChanged = req.body.activationStatus !== undefined;
     if (req.body.activationStatus === 'activated' && !vehicle.activatedAt) vehicle.activatedAt = new Date();
+    if (req.body.activationStatus && req.body.activationStatus !== 'activated') vehicle.activatedAt = null;
     await vehicle.save();
+
+    if (activationStatusChanged && vehicle.orderId) {
+      const order = await Order.findByPk(vehicle.orderId);
+      if (order) {
+        order.isActivated = req.body.activationStatus === 'activated';
+        if (req.body.activationStatus === 'activated') order.orderStatus = 'delivered';
+        await order.save();
+      }
+
+      if (req.body.activationStatus === 'activated') {
+        await ActivationLog.update(
+          { status: 'done', completedAt: new Date() },
+          { where: { vehicleId: vehicle.id } }
+        );
+      } else if (req.body.activationStatus === 'pending' || req.body.activationStatus === 'deactivated') {
+        await ActivationLog.update(
+          { status: 'pending', completedAt: null, notes: null },
+          { where: { vehicleId: vehicle.id } }
+        );
+      }
+    }
 
     res.json({ success: true, message: 'Device updated', vehicle });
   } catch (err) {

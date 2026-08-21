@@ -14,6 +14,10 @@ class VehicleModel {
   final String? activatedAt;
   final Map<String, dynamic>? customer;
   final Map<String, dynamic>? dealer;
+  final String? liveStatus;
+  final double? speedKmh;
+  final String? lastLocation;
+  final String? lastSeen;
 
   VehicleModel({
     required this.id,
@@ -31,6 +35,10 @@ class VehicleModel {
     this.activatedAt,
     this.customer,
     this.dealer,
+    this.liveStatus,
+    this.speedKmh,
+    this.lastLocation,
+    this.lastSeen,
   });
 
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
@@ -50,6 +58,17 @@ class VehicleModel {
       activatedAt: json['activatedAt'],
       customer: json['customer'],
       dealer: json['dealer'],
+      liveStatus: json['liveStatus'],
+      speedKmh: json['speedKmh'] != null
+          ? double.tryParse(json['speedKmh'].toString())
+          : json['lastSpeedKmh'] != null
+              ? double.tryParse(json['lastSpeedKmh'].toString())
+              : null,
+      lastLocation: json['lastLocation'] ??
+          (json['lastLatitude'] != null && json['lastLongitude'] != null
+              ? '${json['lastLatitude']}, ${json['lastLongitude']}'
+              : null),
+      lastSeen: json['lastSeen'] ?? json['lastSeenAt'],
     );
   }
 }
