@@ -5,6 +5,9 @@ import { Activity, Clock, Gauge, Navigation, Power, Radio, Satellite } from 'luc
 import Modal from './Modal';
 import api from '../utils/api';
 import { createTrackingSocket } from '../utils/socket';
+import bikeMarkerUrl from '../assets/GPS marker/bike.png';
+import carMarkerUrl from '../assets/GPS marker/car.avif';
+import truckMarkerUrl from '../assets/GPS marker/trucks.jpg';
 
 function formatDateTime(value) {
   if (!value) return 'Not received yet';
@@ -14,6 +17,15 @@ function formatDateTime(value) {
 function formatSpeed(value) {
   if (value === null || value === undefined) return '0 km/h';
   return `${Math.round(Number(value))} km/h`;
+}
+
+function getVehicleMarkerImage(vehicleType) {
+  const normalizedType = String(vehicleType || '').toLowerCase();
+  if (normalizedType.includes('truck')) return truckMarkerUrl;
+  if (normalizedType.includes('bike') || normalizedType.includes('motorcycle') || normalizedType.includes('scooter')) {
+    return bikeMarkerUrl;
+  }
+  return carMarkerUrl;
 }
 
 function RecenterMap({ position }) {
@@ -59,12 +71,26 @@ export default function VehicleTrackingModal({ vehicle, open, onClose }) {
     }
   }, [vehicle?.id]);
 
+  const markerVehicle = vehicleSnapshot || vehicle;
+  const markerImage = getVehicleMarkerImage(markerVehicle?.vehicleType);
+  const markerRotation = Number.isFinite(Number(position?.course)) ? Number(position.course) : 0;
+
   const markerIcon = useMemo(() => L.divIcon({
     className: '',
-    html: '<div class="tracking-marker"><span></span></div>',
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
-  }), []);
+    html: `
+      <div class="tracking-marker">
+        <div class="tracking-marker__halo"></div>
+        <img
+          src="${markerImage}"
+          alt=""
+          class="tracking-marker__image"
+          style="transform: rotate(${markerRotation}deg);"
+        />
+      </div>
+    `,
+    iconSize: [58, 58],
+    iconAnchor: [29, 43],
+  }), [markerImage, markerRotation]);
 
   useEffect(() => {
     if (!open || !vehicle?.id) return;
