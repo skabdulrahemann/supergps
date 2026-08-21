@@ -52,7 +52,8 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> register(String name, String email, String phone, String password) async {
+  Future<void> register(
+      String name, String email, String phone, String password) async {
     final res = await ApiService.post('/auth/register', {
       'name': name,
       'email': email,

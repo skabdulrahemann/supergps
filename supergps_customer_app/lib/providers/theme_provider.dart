@@ -35,7 +35,11 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_prefKey, mode == ThemeMode.system ? 'system' : (mode == ThemeMode.dark ? 'dark' : 'light'));
+      await prefs.setString(
+          _prefKey,
+          mode == ThemeMode.system
+              ? 'system'
+              : (mode == ThemeMode.dark ? 'dark' : 'light'));
     } catch (_) {}
   }
 

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
+import '../constants/app_strings.dart';
 import '../constants/colors.dart';
+import '../providers/auth_provider.dart';
 import 'home_screen.dart';
 import 'onboarding_screen.dart';
 
@@ -12,41 +13,33 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnim;
-  late Animation<double> _fadeAnim;
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    );
-    _scaleAnim = Tween<double>(begin: 0.5, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
-    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0.3, 1.0, curve: Curves.easeOut)),
-    );
-    _controller.forward();
+        vsync: this, duration: const Duration(milliseconds: 1800))
+      ..repeat(reverse: true);
     _navigate();
   }
 
   Future<void> _navigate() async {
-    await Future.delayed(const Duration(seconds: 3));
+    await Future.delayed(const Duration(milliseconds: 2400));
     if (!mounted) return;
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    // Wait for auth check to complete
+    final auth = context.read<AuthProvider>();
     while (auth.isLoading) {
       await Future.delayed(const Duration(milliseconds: 100));
     }
     if (!mounted) return;
     Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => auth.isLoggedIn ? const HomeScreen() : const OnboardingScreen()),
-    );
+        context,
+        MaterialPageRoute(
+            builder: (_) => auth.isLoggedIn
+                ? const HomeScreen()
+                : const OnboardingScreen()));
   }
 
   @override
@@ -58,78 +51,67 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ScaleTransition(
-                scale: _scaleAnim,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(36),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 40,
-                        offset: const Offset(0, 16),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.shield_rounded,
-                    size: 60,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              FadeTransition(
-                opacity: _fadeAnim,
-                child: const Column(
+      backgroundColor: AppColors.surface,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return Stack(
+                  alignment: Alignment.center,
                   children: [
-                    Text(
-                      'SuperGPS',
-                      style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        fontFamily: 'Inter',
-                        letterSpacing: -1,
+                    Container(
+                      width: 118 + (_controller.value * 22),
+                      height: 118 + (_controller.value * 22),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.primary
+                            .withValues(alpha: 0.12 * (1 - _controller.value)),
                       ),
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Smarter Tracking, Safer Tomorrow',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white70,
-                        fontFamily: 'Inter',
-                        letterSpacing: 2,
-                      ),
-                    ),
+                    child!,
+                  ],
+                );
+              },
+              child: Container(
+                width: 112,
+                height: 112,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(32),
+                  boxShadow: [
+                    BoxShadow(
+                        color: AppColors.primaryDark.withValues(alpha: 0.25),
+                        blurRadius: 24,
+                        offset: const Offset(0, 12)),
                   ],
                 ),
+                child: const Icon(Icons.navigation_rounded,
+                    color: AppColors.textPrimary, size: 56),
               ),
-              const SizedBox(height: 60),
-              FadeTransition(
-                opacity: _fadeAnim,
-                child: SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                    backgroundColor: Colors.white24,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 28),
+            const Text(AppStrings.brandName,
+                style: TextStyle(
+                    fontSize: 34,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8)),
+            const SizedBox(height: 8),
+            const Text(AppStrings.tagline,
+                style: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 46),
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                  strokeWidth: 3, color: AppColors.primaryDark),
+            ),
+          ],
         ),
       ),
     );

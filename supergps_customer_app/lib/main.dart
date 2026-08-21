@@ -27,7 +27,27 @@ class SuperGpsCustomerApp extends StatelessWidget {
             primary: AppColors.primary,
             secondary: AppColors.accent,
             surface: AppColors.surface,
-            background: AppColors.bg,
+            onPrimary: AppColors.textPrimary,
+            onSurface: AppColors.textPrimary,
+          ),
+          textSelectionTheme:
+              const TextSelectionThemeData(cursorColor: AppColors.textPrimary),
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: AppColors.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.border),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide:
+                  const BorderSide(color: AppColors.primaryDark, width: 1.5),
+            ),
           ),
           appBarTheme: const AppBarTheme(
             backgroundColor: AppColors.surface,

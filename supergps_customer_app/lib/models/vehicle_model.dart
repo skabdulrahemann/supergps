@@ -22,6 +22,9 @@ class VehicleModel {
   final double? speedKmh;
   final String? lastLocation;
   final String? lastSeen;
+  final double? lastLatitude;
+  final double? lastLongitude;
+  final String? lastSeenAt;
 
   VehicleModel({
     required this.id,
@@ -44,6 +47,9 @@ class VehicleModel {
     this.speedKmh,
     this.lastLocation,
     this.lastSeen,
+    this.lastLatitude,
+    this.lastLongitude,
+    this.lastSeenAt,
   });
 
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
@@ -65,9 +71,23 @@ class VehicleModel {
       dealer: json['dealer'],
       order: json['order'],
       liveStatus: json['liveStatus'],
-      speedKmh: json['speedKmh'] != null ? double.tryParse(json['speedKmh'].toString()) : null,
-      lastLocation: json['lastLocation'],
-      lastSeen: json['lastSeen'],
+      speedKmh: json['speedKmh'] != null
+          ? double.tryParse(json['speedKmh'].toString())
+          : json['lastSpeedKmh'] != null
+              ? double.tryParse(json['lastSpeedKmh'].toString())
+              : null,
+      lastLocation: json['lastLocation'] ??
+          (json['lastLatitude'] != null && json['lastLongitude'] != null
+              ? '${json['lastLatitude']}, ${json['lastLongitude']}'
+              : null),
+      lastSeen: json['lastSeen'] ?? json['lastSeenAt'],
+      lastLatitude: json['lastLatitude'] != null
+          ? double.tryParse(json['lastLatitude'].toString())
+          : null,
+      lastLongitude: json['lastLongitude'] != null
+          ? double.tryParse(json['lastLongitude'].toString())
+          : null,
+      lastSeenAt: json['lastSeenAt'],
     );
   }
 }

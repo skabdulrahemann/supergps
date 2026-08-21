@@ -1,49 +1,44 @@
 import 'package:flutter/material.dart';
 
-/// SuperGPS design system — matches the approved UI reference.
+/// SUPER GPS customer app design system.
 class AppColors {
-  // Primary palette
-  static const Color primary = Color(0xFF1677FF);
-  static const Color primaryDark = Color(0xFF0E5FDB);
-  static const Color primaryLight = Color(0xFF4B93FF);
-  static const Color accent = Color(0xFF08B8D9);
-  static const Color purple = Color(0xFF7C5CFC);
+  static const Color primary = Color(0xFFFFC400);
+  static const Color primaryStrong = Color(0xFFFFB800);
+  static const Color primaryDark = Color(0xFFF5A800);
+  static const Color accent = Color(0xFFFFC400);
 
-  // Backgrounds
-  static const Color bg = Color(0xFFF7F9FC);
-  static const Color background = Color(0xFFF7F9FC);
+  static const Color bg = Color(0xFFF7F8FA);
+  static const Color background = Color(0xFFF7F8FA);
   static const Color surface = Colors.white;
-  static const Color cardBg = Color(0xFFFFFFFF);
+  static const Color cardBg = Colors.white;
+  static const Color softYellow = Color(0xFFFFF8E1);
 
-  // Text
-  static const Color textPrimary = Color(0xFF111827);
-  static const Color textSecondary = Color(0xFF64748B);
-  static const Color textMuted = Color(0xFF94A3B8);
+  static const Color textPrimary = Color(0xFF171717);
+  static const Color textSecondary = Color(0xFF666666);
+  static const Color textMuted = Color(0xFF929292);
 
-  // Borders
-  static const Color border = Color(0xFFE7EBF3);
-  static const Color divider = Color(0xFFF1F5F9);
+  static const Color border = Color(0xFFE8E8E8);
+  static const Color divider = Color(0xFFF0F0F0);
 
-  // Status
-  static const Color success = Color(0xFF10B981);
+  static const Color success = Color(0xFF16A34A);
   static const Color warning = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
-  static const Color danger = Color(0xFFEF4444);
-  static const Color info = Color(0xFF08B8D9);
+  static const Color error = Color(0xFFDC2626);
+  static const Color danger = Color(0xFFDC2626);
+  static const Color info = Color(0xFF2563EB);
+  static const Color offline = Color(0xFF9CA3AF);
+  static const Color purple = Color(0xFF6D5DF6);
 
-  // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF1677FF), Color(0xFF08B8D9)],
+    colors: [Color(0xFFFFC400), Color(0xFFFFB800)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient darkGradient = LinearGradient(
-    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
+    colors: [Color(0xFF171717), Color(0xFF2A2A2A)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
   );
 
-  // Status tint backgrounds (used for chips / stat cards)
-  static Color tint(Color c) => c.withOpacity(0.10);
+  static Color tint(Color c) => c.withValues(alpha: 0.10);
 }

@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.176.66.151:5000/api';
+  static const String baseUrl = 'http://13.211.206.24:5000/api';
   // static const String baseUrl = 'http://127.0.0.1:5000/api'; // iOS
   // static const String baseUrl = 'http://YOUR_IP:5000/api'; // Real device
 

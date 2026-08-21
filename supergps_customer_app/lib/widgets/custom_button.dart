@@ -28,8 +28,11 @@ class CustomButton extends StatelessWidget {
           backgroundColor: isOutlined ? Colors.white : AppColors.primary,
           foregroundColor: isOutlined ? AppColors.primary : Colors.white,
           elevation: isOutlined ? 0 : 2,
-          side: isOutlined ? const BorderSide(color: AppColors.primary, width: 2) : null,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          side: isOutlined
+              ? const BorderSide(color: AppColors.primary, width: 2)
+              : null,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: isLoading
             ? const SizedBox(

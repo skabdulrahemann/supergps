@@ -1,4 +1,44 @@
 const { Vehicle, Order, User, Dealer, ActivationLog } = require('../models');
+
+function formatAgo(value) {
+  if (!value) return null;
+  const diffMs = Date.now() - new Date(value).getTime();
+  if (!Number.isFinite(diffMs) || diffMs < 0) return 'Just now';
+  const sec = Math.max(1, Math.floor(diffMs / 1000));
+  if (sec < 60) return `${sec} sec ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min} min ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} hr ago`;
+  return `${Math.floor(hr / 24)} days ago`;
+}
+
+function liveStatusFor(vehicle) {
+  if (!vehicle.lastSeenAt) return 'offline';
+  const ageMs = Date.now() - new Date(vehicle.lastSeenAt).getTime();
+  if (ageMs > 15 * 60 * 1000) return 'offline';
+  if (Number(vehicle.lastSpeedKmh || 0) > 3) return 'moving';
+  if (vehicle.lastIgnition === true) return 'idle';
+  return 'stopped';
+}
+
+function serializeVehicle(vehicle) {
+  const data = vehicle.toJSON ? vehicle.toJSON() : vehicle;
+  const hasLocation = data.lastLatitude !== null
+    && data.lastLatitude !== undefined
+    && data.lastLongitude !== null
+    && data.lastLongitude !== undefined;
+
+  return {
+    ...data,
+    liveStatus: liveStatusFor(data),
+    speedKmh: data.lastSpeedKmh,
+    lastSeen: formatAgo(data.lastSeenAt),
+    lastLocation: hasLocation
+      ? `${Number(data.lastLatitude).toFixed(6)}, ${Number(data.lastLongitude).toFixed(6)}`
+      : null,
+  };
+}
 // (ActivationLog already imported above — used by deleteVehicle for cascade cleanup)
 
 exports.getMyVehicles = async (req, res) => {
@@ -11,7 +51,7 @@ exports.getMyVehicles = async (req, res) => {
       ],
       order: [['createdAt', 'DESC']]
     });
-    res.json({ success: true, count: vehicles.length, vehicles });
+    res.json({ success: true, count: vehicles.length, vehicles: vehicles.map(serializeVehicle) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -28,7 +68,7 @@ exports.getVehicleById = async (req, res) => {
       ]
     });
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
-    res.json({ success: true, vehicle });
+    res.json({ success: true, vehicle: serializeVehicle(vehicle) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -47,7 +87,7 @@ exports.getDealerVehicles = async (req, res) => {
       ],
       order: [['createdAt', 'DESC']]
     });
-    res.json({ success: true, count: vehicles.length, vehicles });
+    res.json({ success: true, count: vehicles.length, vehicles: vehicles.map(serializeVehicle) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -63,7 +103,7 @@ exports.getAllVehicles = async (req, res) => {
       ],
       order: [['createdAt', 'DESC']]
     });
-    res.json({ success: true, count: vehicles.length, vehicles });
+    res.json({ success: true, count: vehicles.length, vehicles: vehicles.map(serializeVehicle) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -16,7 +16,7 @@ Open `http://localhost:5173`
 - Email: `admin@supergps.com`
 - Password: `admin123`
 
-Make sure backend is running on `http://localhost:5000`
+Make sure backend is running on `http://13.211.206.24:5000`
 
 ## Environment
 
@@ -25,14 +25,14 @@ Create `.env` from `.env.example`.
 For local development:
 
 ```env
-VITE_API_BASE_URL=/api
-VITE_DEV_API_PROXY=http://localhost:5000
+VITE_API_BASE_URL=http://13.211.206.24:5000/api
+VITE_DEV_API_PROXY=http://13.211.206.24:5000
 ```
 
 For production:
 
 ```env
-VITE_API_BASE_URL=https://your-api-domain.com/api
+VITE_API_BASE_URL=http://13.211.206.24:5000/api
 ```
 
 ## Features

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../constants/app_strings.dart';
 import '../constants/colors.dart';
+import '../widgets/super_components.dart';
 import 'login_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -14,28 +16,38 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _index = 0;
 
   static const _pages = [
-    _OnboardPage(
-      icon: Icons.map_rounded,
-      title: 'Smart Tracking',
-      text: 'Real-time vehicle location, live status, route monitoring aur fleet visibility ek jagah.',
+    _OnboardData(
+      icon: Icons.location_on_rounded,
+      title: 'Know Where Your Vehicle Is',
+      text:
+          'Track your vehicles live with location, speed and ignition information.',
+      chips: ['Live location', 'Speed', 'Ignition'],
     ),
-    _OnboardPage(
-      icon: Icons.dashboard_customize_rounded,
-      title: 'All-in-One GPS',
-      text: 'Alerts, Reports, Playback, Geofence, Security aur product services Super GPS app me.',
+    _OnboardData(
+      icon: Icons.shield_rounded,
+      title: 'Stay In Control',
+      text:
+          'Ignition alerts, geofence, overspeed alerts, parking security and engine lock support.',
+      chips: ['Geofence', 'Overspeed', 'Parking'],
     ),
-    _OnboardPage(
-      icon: Icons.security_rounded,
-      title: 'Safe & Secure',
-      text: 'Ignition alerts, geofence, anti-theft, supported devices me engine lock aur emergency notifications.',
+    _OnboardData(
+      icon: Icons.dashboard_rounded,
+      title: 'Everything in One App',
+      text:
+          'GPS, FASTag, reports, renewals and support built for vehicle owners and fleets.',
+      chips: ['GPS', 'FASTag', 'Reports'],
     ),
   ];
 
+  void _openLogin() => Navigator.pushReplacement(
+      context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+
   void _next() {
     if (_index == _pages.length - 1) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+      _openLogin();
     } else {
-      _controller.nextPage(duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
+      _controller.nextPage(
+          duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
     }
   }
 
@@ -51,22 +63,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       backgroundColor: AppColors.bg,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 22),
           child: Column(
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
-                  child: const Text('Skip'),
-                ),
+              Row(
+                children: [
+                  const Text(AppStrings.brandName,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                  const Spacer(),
+                  TextButton(onPressed: _openLogin, child: const Text('Skip')),
+                ],
               ),
               Expanded(
                 child: PageView.builder(
                   controller: _controller,
                   itemCount: _pages.length,
                   onPageChanged: (i) => setState(() => _index = i),
-                  itemBuilder: (_, i) => _pages[i],
+                  itemBuilder: (_, i) => _OnboardPage(data: _pages[i]),
                 ),
               ),
               Row(
@@ -76,30 +90,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: active ? 24 : 8,
+                    width: active ? 26 : 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: active ? AppColors.primary : AppColors.border,
-                      borderRadius: BorderRadius.circular(8),
+                      color: active ? AppColors.primaryDark : AppColors.border,
+                      borderRadius: BorderRadius.circular(999),
                     ),
                   );
                 }),
               ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
+              const SizedBox(height: 22),
+              SuperButton(
+                  label: _index == _pages.length - 1 ? 'Get Started' : 'Next',
                   onPressed: _next,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: Text(_index == _pages.length - 1 ? 'Get Started' : 'Next',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontFamily: 'Inter')),
-                ),
-              ),
+                  icon: Icons.arrow_forward_rounded),
             ],
           ),
         ),
@@ -108,12 +112,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-class _OnboardPage extends StatelessWidget {
+class _OnboardData {
   final IconData icon;
   final String title;
   final String text;
+  final List<String> chips;
 
-  const _OnboardPage({required this.icon, required this.title, required this.text});
+  const _OnboardData(
+      {required this.icon,
+      required this.title,
+      required this.text,
+      required this.chips});
+}
+
+class _OnboardPage extends StatelessWidget {
+  final _OnboardData data;
+  const _OnboardPage({required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -121,35 +135,102 @@ class _OnboardPage extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          height: 250,
+          height: 270,
           width: double.infinity,
           decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: AppColors.border),
-          ),
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.border)),
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Positioned(top: 30, left: 36, child: Icon(Icons.location_on_rounded, color: AppColors.error.withOpacity(0.18), size: 42)),
-              Positioned(bottom: 34, right: 36, child: Icon(Icons.directions_car_rounded, color: AppColors.success.withOpacity(0.2), size: 52)),
-              Positioned(top: 74, right: 54, child: Icon(Icons.route_rounded, color: AppColors.accent.withOpacity(0.2), size: 62)),
+              Positioned.fill(
+                  child: CustomPaint(painter: _RouteIllustrationPainter())),
+              Positioned(
+                left: 34,
+                bottom: 52,
+                child: Container(
+                  width: 76,
+                  height: 48,
+                  decoration: BoxDecoration(
+                      color: AppColors.textPrimary,
+                      borderRadius: BorderRadius.circular(14)),
+                  child: const Icon(Icons.local_shipping_rounded,
+                      color: AppColors.primary),
+                ),
+              ),
               Container(
-                width: 118,
-                height: 118,
-                decoration: BoxDecoration(gradient: AppColors.primaryGradient, borderRadius: BorderRadius.circular(34)),
-                child: Icon(icon, color: Colors.white, size: 58),
+                width: 112,
+                height: 112,
+                decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(32)),
+                child: Icon(data.icon, color: AppColors.textPrimary, size: 56),
+              ),
+              Positioned(
+                right: 24,
+                top: 30,
+                child: Wrap(
+                  direction: Axis.vertical,
+                  spacing: 8,
+                  children: data.chips.map((c) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                          color: AppColors.softYellow,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: AppColors.border)),
+                      child: Text(c,
+                          style: const TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w800)),
+                    );
+                  }).toList(),
+                ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 34),
-        Text(title, textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: AppColors.textPrimary, fontFamily: 'Inter')),
+        const SizedBox(height: 32),
+        Text(data.title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                fontSize: 29,
+                fontWeight: FontWeight.w900,
+                color: AppColors.textPrimary,
+                height: 1.08)),
         const SizedBox(height: 12),
-        Text(text, textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 15, height: 1.5, color: AppColors.textSecondary, fontFamily: 'Inter')),
+        Text(data.text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500)),
       ],
     );
   }
+}
+
+class _RouteIllustrationPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final road = Paint()
+      ..color = AppColors.border
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    final path = Path()
+      ..moveTo(size.width * .12, size.height * .68)
+      ..cubicTo(size.width * .34, size.height * .42, size.width * .52,
+          size.height * .86, size.width * .76, size.height * .33)
+      ..cubicTo(size.width * .82, size.height * .18, size.width * .91,
+          size.height * .24, size.width * .88, size.height * .16);
+    canvas.drawPath(path, road);
+    final marker = Paint()..color = AppColors.primaryDark;
+    canvas.drawCircle(Offset(size.width * .86, size.height * .18), 8, marker);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

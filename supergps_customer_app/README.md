@@ -21,8 +21,8 @@ static const String baseUrl = 'http://10.0.2.2:5000/api';
 // iOS Simulator
 static const String baseUrl = 'http://127.0.0.1:5000/api';
 
-// Real Device (same WiFi)
-static const String baseUrl = 'http://YOUR_COMPUTER_IP:5000/api';
+// AWS backend
+static const String baseUrl = 'http://13.211.206.24:5000/api';
 ```
 
 Make sure backend is running on port 5000.

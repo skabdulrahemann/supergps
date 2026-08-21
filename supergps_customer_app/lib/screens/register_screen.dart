@@ -33,8 +33,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _register() async {
-    if (_nameCtrl.text.trim().isEmpty || _emailCtrl.text.trim().isEmpty ||
-        _phoneCtrl.text.trim().isEmpty || _passCtrl.text.isEmpty) {
+    if (_nameCtrl.text.trim().isEmpty ||
+        _emailCtrl.text.trim().isEmpty ||
+        _phoneCtrl.text.trim().isEmpty ||
+        _passCtrl.text.isEmpty) {
       setState(() => _error = 'Please fill all fields');
       return;
     }
@@ -46,7 +48,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() => _error = 'Terms acceptance required hai');
       return;
     }
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       await Provider.of<AuthProvider>(context, listen: false).register(
         _nameCtrl.text.trim(),
@@ -57,7 +62,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => OtpScreen(mobile: _phoneCtrl.text.trim())),
+          MaterialPageRoute(
+              builder: (_) => OtpScreen(mobile: _phoneCtrl.text.trim())),
           (route) => false,
         );
       }
@@ -117,22 +123,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                      const Icon(Icons.error_outline,
+                          color: AppColors.error, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           _error!,
-                          style: const TextStyle(color: AppColors.error, fontSize: 13, fontFamily: 'Inter'),
+                          style: const TextStyle(
+                              color: AppColors.error,
+                              fontSize: 13,
+                              fontFamily: 'Inter'),
                         ),
                       ),
                     ],
                   ),
                 ),
-              _buildField('Full Name', 'John Doe', Icons.person_outline, _nameCtrl),
+              _buildField(
+                  'Full Name', 'John Doe', Icons.person_outline, _nameCtrl),
               const SizedBox(height: 16),
-              _buildField('Email Address', 'you@email.com', Icons.email_outlined, _emailCtrl, keyboardType: TextInputType.emailAddress),
+              _buildField('Email Address', 'you@email.com',
+                  Icons.email_outlined, _emailCtrl,
+                  keyboardType: TextInputType.emailAddress),
               const SizedBox(height: 16),
-              _buildField('Phone Number', '+91 98765 43210', Icons.phone_outlined, _phoneCtrl, keyboardType: TextInputType.phone),
+              _buildField('Phone Number', '+91 98765 43210',
+                  Icons.phone_outlined, _phoneCtrl,
+                  keyboardType: TextInputType.phone),
               const SizedBox(height: 16),
               _buildField(
                 'Password',
@@ -141,8 +156,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 _passCtrl,
                 obscureText: _obscure,
                 suffixIcon: IconButton(
-                  icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                      color: AppColors.textMuted, size: 22),
+                  icon: Icon(
+                      _obscure
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: AppColors.textMuted,
+                      size: 22),
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
@@ -161,7 +180,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 contentPadding: EdgeInsets.zero,
                 controlAffinity: ListTileControlAffinity.leading,
                 title: const Text('I accept Privacy Policy & Terms',
-                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                        fontFamily: 'Inter')),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -173,17 +195,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
                   ),
                   child: _loading
                       ? const SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2.5, color: Colors.white),
                         )
                       : const Text(
                           'Create Account',
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+                          style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Inter'),
                         ),
                 ),
               ),
@@ -195,32 +222,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildField(String label, String hint, IconData icon, TextEditingController controller,
-      {bool obscureText = false, TextInputType keyboardType = TextInputType.text, Widget? suffixIcon}) {
+  Widget _buildField(String label, String hint, IconData icon,
+      TextEditingController controller,
+      {bool obscureText = false,
+      TextInputType keyboardType = TextInputType.text,
+      Widget? suffixIcon}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary, fontFamily: 'Inter'),
+          style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+              fontFamily: 'Inter'),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
-          style: const TextStyle(fontSize: 15, fontFamily: 'Inter', color: AppColors.textPrimary),
+          style: const TextStyle(
+              fontSize: 15, fontFamily: 'Inter', color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.textMuted, fontFamily: 'Inter', fontSize: 14),
+            hintStyle: const TextStyle(
+                color: AppColors.textMuted, fontFamily: 'Inter', fontSize: 14),
             prefixIcon: Icon(icon, color: AppColors.textMuted, size: 22),
             suffixIcon: suffixIcon,
             filled: true,
             fillColor: AppColors.surface,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.border)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.border)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: AppColors.border)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(color: AppColors.border)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide:
+                    const BorderSide(color: AppColors.primary, width: 2)),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
           ),
         ),
       ],

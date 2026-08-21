@@ -13,16 +13,27 @@ const trackingRoutes = require('./routes/trackingRoutes');
 
 const app = express();
 
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://127.0.0.1:5173')
+const defaultOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://13.211.206.24',
+  'http://13.211.206.24:5173',
+];
+
+const allowedOrigins = (process.env.CORS_ORIGIN || defaultOrigins.join(','))
   .split(',')
   .map((origin) => origin.trim())
-  .filter(Boolean);
+  .filter(Boolean)
+  .concat(defaultOrigins)
+  .filter((origin, index, origins) => origins.indexOf(origin) === index);
 
 const authLimiter = rateLimit({
   windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
   max: Number(process.env.AUTH_RATE_LIMIT_MAX || 20),
   standardHeaders: true,
   legacyHeaders: false,
+  skipSuccessfulRequests: true,
   message: { success: false, message: 'Too many auth attempts. Please try again later.' },
 });
 
