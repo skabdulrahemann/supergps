@@ -6,8 +6,8 @@ import Modal from './Modal';
 import api from '../utils/api';
 import { createTrackingSocket } from '../utils/socket';
 import bikeMarkerUrl from '../assets/GPS marker/bike.png';
-import carMarkerUrl from '../assets/GPS marker/car.avif';
-import truckMarkerUrl from '../assets/GPS marker/trucks.jpg';
+import carMarkerUrl from '../assets/GPS marker/car.png';
+import truckMarkerUrl from '../assets/GPS marker/trucks.png';
 
 function formatDateTime(value) {
   if (!value) return 'Not received yet';

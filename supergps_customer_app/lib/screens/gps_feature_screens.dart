@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../constants/colors.dart';
 import '../models/vehicle_model.dart';
@@ -10,6 +12,7 @@ import 'profile_screen.dart';
 import 'shop_screen.dart';
 
 const _noVehicleTitle = 'Select a vehicle';
+const _defaultMapCenter = LatLng(20.5937, 78.9629);
 
 class LiveTrackingScreen extends StatelessWidget {
   final String vehicleNumber;
@@ -43,7 +46,8 @@ class LiveTrackingScreen extends StatelessWidget {
     final lat = double.tryParse(latitude?.toString() ?? '');
     final lng = double.tryParse(longitude?.toString() ?? '');
     if (lat == null || lng == null) return;
-    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    final uri =
+        Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
@@ -70,21 +74,28 @@ class LiveTrackingScreen extends StatelessWidget {
           if (snapshot.hasError) {
             return Column(
               children: [
-                const Expanded(
-                  child: _MapMock(
+                Expanded(
+                  child: _LiveVehicleMap(
+                    vehicle: vehicle,
                     title: 'Tracking unavailable',
                     subtitle: 'Latest location load nahi ho payi',
-                    icon: Icons.cloud_off_rounded,
+                    latitude: null,
+                    longitude: null,
+                    course: null,
+                    online: false,
                   ),
                 ),
                 _BottomSheetCard(
                   children: [
-                    _StatusRow(vehicle: number, status: 'Offline', speed: '0 km/h'),
+                    _StatusRow(
+                        vehicle: number, status: 'Offline', speed: '0 km/h'),
                     const Divider(height: 26),
                     _InfoLine(
                       icon: Icons.error_outline_rounded,
                       label: 'Error',
-                      value: snapshot.error.toString().replaceAll('Exception: ', ''),
+                      value: snapshot.error
+                          .toString()
+                          .replaceAll('Exception: ', ''),
                     ),
                   ],
                 ),
@@ -95,8 +106,15 @@ class LiveTrackingScreen extends StatelessWidget {
           final data = snapshot.data;
           final position = data?['position'] as Map<String, dynamic>?;
           final vehicleSnapshot = data?['vehicle'] as Map<String, dynamic>?;
-          final hasPosition =
-              position?['latitude'] != null && position?['longitude'] != null;
+          final latitude = double.tryParse(position?['latitude']?.toString() ??
+              vehicle?.lastLatitude?.toString() ??
+              '');
+          final longitude = double.tryParse(
+              position?['longitude']?.toString() ??
+                  vehicle?.lastLongitude?.toString() ??
+                  '');
+          final course = double.tryParse(position?['course']?.toString() ?? '');
+          final hasPosition = latitude != null && longitude != null;
           final status = _formatStatus(vehicleSnapshot);
           final speed = _formatSpeed(position?['speedKmh'] ??
               vehicleSnapshot?['lastSpeedKmh'] ??
@@ -119,15 +137,16 @@ class LiveTrackingScreen extends StatelessWidget {
           return Column(
             children: [
               Expanded(
-                child: _MapMock(
+                child: _LiveVehicleMap(
+                  vehicle: vehicle,
                   title: number,
                   subtitle: hasPosition
                       ? '$status - $speed - $location'
                       : 'No GPS data received yet',
-                  icon: hasPosition
-                      ? Icons.navigation_rounded
-                      : Icons.gps_off_rounded,
-                  route: hasPosition,
+                  latitude: latitude,
+                  longitude: longitude,
+                  course: course,
+                  online: hasPosition,
                 ),
               ),
               _BottomSheetCard(
@@ -158,8 +177,7 @@ class LiveTrackingScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     _PrimaryButton(
                       label: 'Open Location in Maps',
-                      onTap: () => _openMaps(
-                          position!['latitude'], position['longitude']),
+                      onTap: () => _openMaps(latitude, longitude),
                     ),
                   ],
                 ],
@@ -213,10 +231,10 @@ class VehicleDetailsScreen extends StatelessWidget {
             _VehicleHero(
                 number: number,
                 model: [
-                      vehicle?.vehicleBrand,
-                      vehicle?.vehicleModel,
-                      vehicle?.vehicleType
-                    ].whereType<String>().where((v) => v.isNotEmpty).join(' '),
+                  vehicle?.vehicleBrand,
+                  vehicle?.vehicleModel,
+                  vehicle?.vehicleType
+                ].whereType<String>().where((v) => v.isNotEmpty).join(' '),
                 status: status),
             const TabBar(
               labelColor: AppColors.primary,
@@ -240,13 +258,13 @@ class VehicleDetailsScreen extends StatelessWidget {
                             AppColors.primary),
                         _Metric('Status', status, Icons.gps_fixed_rounded,
                             AppColors.warning),
-                        _Metric(
-                            'Ignition',
-                            ignition,
-                            Icons.vpn_key_rounded,
+                        _Metric('Ignition', ignition, Icons.vpn_key_rounded,
                             AppColors.success),
-                        _Metric('Satellites', '${vehicle?.lastSatellites ?? '-'}',
-                            Icons.satellite_alt_rounded, AppColors.purple),
+                        _Metric(
+                            'Satellites',
+                            '${vehicle?.lastSatellites ?? '-'}',
+                            Icons.satellite_alt_rounded,
+                            AppColors.purple),
                       ]),
                       const SizedBox(height: 14),
                       _InfoPanel(title: 'Last Location', lines: [
@@ -301,6 +319,7 @@ class PlaybackScreen extends StatelessWidget {
     );
   }
 }
+
 class AlertsScreen extends StatelessWidget {
   const AlertsScreen({super.key});
 
@@ -317,6 +336,24 @@ class AlertsScreen extends StatelessWidget {
     );
   }
 }
+
+class ParkingModeScreen extends StatelessWidget {
+  const ParkingModeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _Page(
+      title: 'Parking',
+      child: EmptyState(
+        icon: Icons.local_parking_rounded,
+        title: 'Parking mode not enabled',
+        subtitle:
+            'Parking alerts will appear here after parking rules and vehicle movement alerts are connected.',
+      ),
+    );
+  }
+}
+
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
 
@@ -333,6 +370,7 @@ class ReportsScreen extends StatelessWidget {
     );
   }
 }
+
 class GeofenceListScreen extends StatelessWidget {
   const GeofenceListScreen({super.key});
 
@@ -349,6 +387,7 @@ class GeofenceListScreen extends StatelessWidget {
     );
   }
 }
+
 class AddGeofenceScreen extends StatelessWidget {
   const AddGeofenceScreen({super.key});
 
@@ -365,6 +404,7 @@ class AddGeofenceScreen extends StatelessWidget {
     );
   }
 }
+
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
 
@@ -380,6 +420,7 @@ class NotificationsScreen extends StatelessWidget {
     );
   }
 }
+
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -403,8 +444,10 @@ class SettingsScreen extends StatelessWidget {
               color: AppColors.primary,
               title: 'Notifications',
               subtitle: 'Order, tracking and service alerts',
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const NotificationsScreen()))),
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const NotificationsScreen()))),
           const SizedBox(height: 12),
           const _SettingsGroupTitle('App Preferences'),
           _FeatureTile(
@@ -440,6 +483,7 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 }
+
 class ServicesScreen extends StatelessWidget {
   const ServicesScreen({super.key});
 
@@ -621,6 +665,7 @@ class RenewalScreen extends StatelessWidget {
     );
   }
 }
+
 class DeviceDetailsScreen extends StatelessWidget {
   const DeviceDetailsScreen({super.key});
 
@@ -637,6 +682,7 @@ class DeviceDetailsScreen extends StatelessWidget {
     );
   }
 }
+
 class VehicleDocumentsScreen extends StatelessWidget {
   const VehicleDocumentsScreen({super.key});
 
@@ -653,6 +699,7 @@ class VehicleDocumentsScreen extends StatelessWidget {
     );
   }
 }
+
 class EngineLockScreen extends StatelessWidget {
   const EngineLockScreen({super.key});
 
@@ -669,6 +716,7 @@ class EngineLockScreen extends StatelessWidget {
     );
   }
 }
+
 class ShareLocationScreen extends StatelessWidget {
   const ShareLocationScreen({super.key});
 
@@ -685,6 +733,7 @@ class ShareLocationScreen extends StatelessWidget {
     );
   }
 }
+
 class FastagScreen extends StatelessWidget {
   const FastagScreen({super.key});
 
@@ -710,6 +759,7 @@ class FastagScreen extends StatelessWidget {
     );
   }
 }
+
 class FuelMonitoringScreen extends StatelessWidget {
   const FuelMonitoringScreen({super.key});
 
@@ -726,6 +776,7 @@ class FuelMonitoringScreen extends StatelessWidget {
     );
   }
 }
+
 class DriversScreen extends StatelessWidget {
   const DriversScreen({super.key});
 
@@ -742,6 +793,7 @@ class DriversScreen extends StatelessWidget {
     );
   }
 }
+
 class InvoiceScreen extends StatelessWidget {
   const InvoiceScreen({super.key});
 
@@ -758,6 +810,7 @@ class InvoiceScreen extends StatelessWidget {
     );
   }
 }
+
 class SecurityScreen extends StatefulWidget {
   const SecurityScreen({super.key});
 
@@ -828,6 +881,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
     );
   }
 }
+
 class LanguageScreen extends StatelessWidget {
   const LanguageScreen({super.key});
 
@@ -966,22 +1020,46 @@ class _Page extends StatelessWidget {
   }
 }
 
-class _MapMock extends StatelessWidget {
+String _markerAssetForVehicle(String? vehicleType) {
+  final normalized = (vehicleType ?? '').toLowerCase();
+  if (normalized.contains('truck')) return 'assets/gps_marker/trucks.png';
+  if (normalized.contains('bike') ||
+      normalized.contains('motorcycle') ||
+      normalized.contains('scooter')) {
+    return 'assets/gps_marker/bike.png';
+  }
+  return 'assets/gps_marker/car.png';
+}
+
+class _LiveVehicleMap extends StatelessWidget {
+  final VehicleModel? vehicle;
   final String title;
   final String subtitle;
-  final IconData icon;
-  final bool route;
+  final double? latitude;
+  final double? longitude;
+  final double? course;
+  final bool online;
 
-  const _MapMock(
-      {required this.title,
-      required this.subtitle,
-      required this.icon,
-      this.route = false});
+  const _LiveVehicleMap({
+    required this.vehicle,
+    required this.title,
+    required this.subtitle,
+    required this.latitude,
+    required this.longitude,
+    required this.course,
+    required this.online,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final hasPosition = latitude != null && longitude != null;
+    final point =
+        hasPosition ? LatLng(latitude!, longitude!) : _defaultMapCenter;
+    final markerAsset = _markerAssetForVehicle(vehicle?.vehicleType);
+
     return Container(
       margin: const EdgeInsets.all(18),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: const Color(0xFFEAF3FF),
         borderRadius: BorderRadius.circular(22),
@@ -989,24 +1067,60 @@ class _MapMock extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          Positioned.fill(
-              child: CustomPaint(painter: _GridPainter(route: route))),
-          Center(
-            child: Container(
-              width: 74,
-              height: 74,
-              decoration: BoxDecoration(
-                  color: AppColors.primary,
+          FlutterMap(
+            options: MapOptions(
+              initialCenter: point,
+              initialZoom: hasPosition ? 15 : 5,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.drag |
+                    InteractiveFlag.pinchZoom |
+                    InteractiveFlag.doubleTapZoom,
+              ),
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.supergps.customer',
+              ),
+              if (hasPosition)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: point,
+                      width: 72,
+                      height: 72,
+                      alignment: Alignment.topCenter,
+                      child: _VehicleImageMarker(
+                        asset: markerAsset,
+                        course: course ?? 0,
+                        online: online,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          if (!hasPosition)
+            Center(
+              child: Container(
+                width: 78,
+                height: 78,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
                   borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border),
                   boxShadow: [
                     BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.28),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8)),
-                  ]),
-              child: Icon(icon, color: Colors.white, size: 38),
+                      color: Colors.black.withValues(alpha: 0.10),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.gps_off_rounded,
+                    color: AppColors.textMuted, size: 38),
+              ),
             ),
-          ),
           Positioned(
             left: 16,
             right: 16,
@@ -1014,7 +1128,9 @@ class _MapMock extends StatelessWidget {
             child: _InfoBanner(
                 title: title,
                 subtitle: subtitle,
-                icon: Icons.location_on_rounded),
+                icon: hasPosition
+                    ? Icons.navigation_rounded
+                    : Icons.location_searching_rounded),
           ),
         ],
       ),
@@ -1022,39 +1138,64 @@ class _MapMock extends StatelessWidget {
   }
 }
 
-class _GridPainter extends CustomPainter {
-  final bool route;
-  const _GridPainter({required this.route});
+class _VehicleImageMarker extends StatelessWidget {
+  final String asset;
+  final double course;
+  final bool online;
+
+  const _VehicleImageMarker({
+    required this.asset,
+    required this.course,
+    required this.online,
+  });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final grid = Paint()
-      ..color = Colors.white.withValues(alpha: 0.75)
-      ..strokeWidth = 1;
-    for (double x = 0; x < size.width; x += 42) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
-    }
-    for (double y = 0; y < size.height; y += 42) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
-    }
-    if (route) {
-      final paint = Paint()
-        ..color = AppColors.primary
-        ..strokeWidth = 5
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round;
-      final path = Path()
-        ..moveTo(size.width * .16, size.height * .72)
-        ..cubicTo(size.width * .32, size.height * .48, size.width * .45,
-            size.height * .85, size.width * .62, size.height * .42)
-        ..cubicTo(size.width * .72, size.height * .18, size.width * .86,
-            size.height * .38, size.width * .82, size.height * .24);
-      canvas.drawPath(path, paint);
-    }
+  Widget build(BuildContext context) {
+    final halo = online ? AppColors.success : AppColors.textMuted;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: halo.withValues(alpha: 0.14),
+            boxShadow: [
+              BoxShadow(
+                color: halo.withValues(alpha: 0.16),
+                blurRadius: 22,
+                spreadRadius: 7,
+              ),
+            ],
+          ),
+        ),
+        Transform.rotate(
+          angle: course * 0.017453292519943295,
+          child: Container(
+            width: 48,
+            height: 48,
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: 18,
+                  offset: const Offset(0, 9),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(asset, fit: BoxFit.cover),
+            ),
+          ),
+        ),
+      ],
+    );
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _BottomSheetCard extends StatelessWidget {
@@ -1458,5 +1599,3 @@ class _PrimaryButton extends StatelessWidget {
     );
   }
 }
-
-

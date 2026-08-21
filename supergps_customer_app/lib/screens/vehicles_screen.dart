@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../constants/colors.dart';
 import '../models/vehicle_model.dart';
 import '../services/api_service.dart';
@@ -165,10 +166,7 @@ class _VehicleCard extends StatelessWidget {
     return SuperCard(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-      onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => VehicleDetailsScreen(vehicle: vehicle))),
+      onTap: () => _showVehicleActions(context, vehicle, status),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -244,43 +242,60 @@ class _VehicleCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              _ActionPill(
-                label: 'Track',
-                icon: Icons.navigation_rounded,
-                primary: true,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => LiveTrackingScreen(
-                        vehicleNumber: title, vehicle: vehicle),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _showVehicleActions(context, vehicle, status),
+            child: Row(
+              children: const [
+                Expanded(
+                  child: Text(
+                    'Tap vehicle for tracking options',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              _ActionPill(
-                label: 'Playback',
-                icon: Icons.history_rounded,
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const PlaybackScreen())),
-              ),
-              const SizedBox(width: 6),
-              _ActionPill(
-                  label: 'Share', icon: Icons.share_outlined, onTap: () {}),
-              const SizedBox(width: 6),
-              _ActionPill(
-                label: 'Details',
-                icon: Icons.article_outlined,
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            VehicleDetailsScreen(vehicle: vehicle))),
-              ),
-            ],
+                Icon(Icons.keyboard_arrow_up_rounded,
+                    color: AppColors.textMuted, size: 20),
+              ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showVehicleActions(
+      BuildContext context, VehicleModel vehicle, String status) {
+    final title = vehicle.vehicleNumber ?? 'Vehicle number pending';
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _VehicleActionsSheet(
+        vehicle: vehicle,
+        status: status,
+        onOpen: (screen) {
+          Navigator.pop(context);
+          Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+        },
+        onShare: () async {
+          Navigator.pop(context);
+          final lat = vehicle.lastLatitude;
+          final lng = vehicle.lastLongitude;
+          final text = lat != null && lng != null
+              ? 'SuperGPS location for $title: https://www.google.com/maps/search/?api=1&query=$lat,$lng'
+              : 'SuperGPS vehicle: $title';
+          final uri = Uri(
+            scheme: 'sms',
+            queryParameters: {'body': text},
+          );
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri);
+          }
+        },
       ),
     );
   }
@@ -298,6 +313,187 @@ class _VehicleCard extends StatelessWidget {
       default:
         return Icons.directions_car_rounded;
     }
+  }
+}
+
+class _VehicleActionsSheet extends StatelessWidget {
+  final VehicleModel vehicle;
+  final String status;
+  final ValueChanged<Widget> onOpen;
+  final VoidCallback onShare;
+
+  const _VehicleActionsSheet({
+    required this.vehicle,
+    required this.status,
+    required this.onOpen,
+    required this.onShare,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final title = vehicle.vehicleNumber ?? 'Vehicle number pending';
+    final model = [
+      vehicle.vehicleBrand,
+      vehicle.vehicleModel,
+      vehicle.vehicleType,
+    ].whereType<String>().where((item) => item.isNotEmpty).join(' ');
+    final actions = [
+      _SheetAction(
+          'Track',
+          Icons.navigation_rounded,
+          AppColors.primaryDark,
+          () => onOpen(
+              LiveTrackingScreen(vehicleNumber: title, vehicle: vehicle))),
+      _SheetAction('Reports', Icons.summarize_rounded, AppColors.purple,
+          () => onOpen(const ReportsScreen())),
+      _SheetAction('Playback', Icons.history_rounded, AppColors.info,
+          () => onOpen(const PlaybackScreen())),
+      _SheetAction(
+          'Share', Icons.share_location_rounded, AppColors.success, onShare),
+      _SheetAction('Details', Icons.article_outlined, AppColors.textPrimary,
+          () => onOpen(VehicleDetailsScreen(vehicle: vehicle))),
+      _SheetAction('Lock', Icons.lock_rounded, AppColors.error,
+          () => onOpen(const EngineLockScreen())),
+      _SheetAction('Alerts', Icons.notifications_active_rounded,
+          AppColors.warning, () => onOpen(const AlertsScreen())),
+      _SheetAction('Parking', Icons.local_parking_rounded, AppColors.accent,
+          () => onOpen(const ParkingModeScreen())),
+    ];
+
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 22),
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: AppColors.softYellow,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(_vehicleIcon(vehicle.vehicleType),
+                      color: AppColors.textPrimary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 2),
+                      Text(model.isEmpty ? status : '$model - $status',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: actions.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.86,
+              ),
+              itemBuilder: (_, i) => _SheetActionButton(action: actions[i]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _vehicleIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'truck':
+        return Icons.local_shipping_rounded;
+      case 'bike':
+        return Icons.two_wheeler_rounded;
+      case 'bus':
+        return Icons.directions_bus_rounded;
+      case 'tractor':
+        return Icons.agriculture_rounded;
+      default:
+        return Icons.directions_car_rounded;
+    }
+  }
+}
+
+class _SheetAction {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _SheetAction(this.label, this.icon, this.color, this.onTap);
+}
+
+class _SheetActionButton extends StatelessWidget {
+  final _SheetAction action;
+  const _SheetActionButton({required this.action});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: action.onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.tint(action.color),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: action.color.withValues(alpha: 0.16)),
+            ),
+            child: Icon(action.icon, color: action.color, size: 23),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            action.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -355,61 +551,6 @@ class _CompactInfoRow extends StatelessWidget {
             ),
           );
         }),
-      ),
-    );
-  }
-}
-
-class _ActionPill extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool primary;
-
-  const _ActionPill({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-    this.primary = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = primary ? AppColors.primary : Colors.transparent;
-    final fg = AppColors.textPrimary;
-
-    return Expanded(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Container(
-          height: 34,
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-                color: primary ? AppColors.primaryDark : AppColors.border),
-          ),
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 16, color: fg),
-                const SizedBox(width: 4),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
