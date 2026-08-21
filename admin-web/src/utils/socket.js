@@ -15,7 +15,11 @@ export function createTrackingSocket() {
   const token = localStorage.getItem('token');
   return io(getSocketUrl(), {
     auth: { token },
-    transports: ['websocket'],
-    reconnectionAttempts: 3,
+    transports: ['polling', 'websocket'],
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 500,
+    reconnectionDelayMax: 3000,
+    timeout: 10000,
   });
 }

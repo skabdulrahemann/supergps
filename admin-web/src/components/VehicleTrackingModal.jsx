@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Activity, Clock, Gauge, Navigation, Power, Radio, Satellite } from 'lucide-react';
@@ -35,6 +35,29 @@ export default function VehicleTrackingModal({ vehicle, open, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [socketStatus, setSocketStatus] = useState('Connecting...');
+  const [socketLive, setSocketLive] = useState(false);
+
+  const loadLatestPosition = useCallback(async ({ showLoading = false, showNoData = false } = {}) => {
+    if (!vehicle?.id) return;
+
+    if (showLoading) setLoading(true);
+
+    try {
+      const res = await api.get(`/tracking/${vehicle.id}/latest`);
+      setPosition(res.data.position || null);
+      setVehicleSnapshot(res.data.vehicle || null);
+
+      if (res.data.position) {
+        setError('');
+      } else if (showNoData) {
+        setError('Is vehicle ka GPS data abhi receive nahi hua.');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Latest location load nahi ho payi.');
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  }, [vehicle?.id]);
 
   const markerIcon = useMemo(() => L.divIcon({
     className: '',
@@ -52,40 +75,41 @@ export default function VehicleTrackingModal({ vehicle, open, onClose }) {
     setPosition(null);
     setVehicleSnapshot(null);
 
-    api.get(`/tracking/${vehicle.id}/latest`)
-      .then((res) => {
-        if (cancelled) return;
-        setPosition(res.data.position || null);
-        setVehicleSnapshot(res.data.vehicle || null);
-        if (!res.data.position) {
-          setError('Is vehicle ka GPS data abhi receive nahi hua.');
-        }
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setError(err.response?.data?.message || 'Latest location load nahi ho payi.');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    loadLatestPosition({ showLoading: true, showNoData: true }).finally(() => {
+      if (cancelled) setLoading(false);
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [open, vehicle?.id]);
+  }, [loadLatestPosition, open, vehicle?.id]);
+
+  useEffect(() => {
+    if (!open || !vehicle?.id) return;
+
+    const refreshMs = socketLive ? 10000 : 2000;
+    const intervalId = window.setInterval(() => {
+      loadLatestPosition({ showNoData: false });
+    }, refreshMs);
+
+    return () => window.clearInterval(intervalId);
+  }, [loadLatestPosition, open, socketLive, vehicle?.id]);
 
   useEffect(() => {
     if (!open || !vehicle?.id) return;
 
     const socket = createTrackingSocket();
     setSocketStatus('Connecting...');
+    setSocketLive(false);
 
     socket.on('connect', () => {
       setSocketStatus('Connected, joining vehicle...');
+      setSocketLive(false);
     });
 
     socket.on('connect_error', (err) => {
       setSocketStatus('Socket disconnected');
+      setSocketLive(false);
       setError(err.message || 'Live connection failed.');
     });
 
@@ -93,8 +117,11 @@ export default function VehicleTrackingModal({ vehicle, open, onClose }) {
       socket.emit('tracking:join', { vehicleId: vehicle.id }, (ack) => {
         if (ack?.success) {
           setSocketStatus('Live');
+          setSocketLive(true);
+          loadLatestPosition({ showNoData: false });
         } else {
           setSocketStatus('Join failed');
+          setSocketLive(false);
           setError(ack?.message || 'Vehicle live room join nahi hua.');
         }
       });
@@ -106,17 +133,19 @@ export default function VehicleTrackingModal({ vehicle, open, onClose }) {
       setVehicleSnapshot(payload.vehicle || null);
       setError('');
       setSocketStatus('Live');
+      setSocketLive(true);
     });
 
     socket.on('disconnect', () => {
       setSocketStatus('Disconnected');
+      setSocketLive(false);
     });
 
     return () => {
       socket.emit('tracking:leave', { vehicleId: vehicle.id });
       socket.close();
     };
-  }, [open, vehicle?.id]);
+  }, [loadLatestPosition, open, vehicle?.id]);
 
   if (!vehicle) return null;
 
