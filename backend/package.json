@@ -13,7 +13,8 @@
     "audit:prod": "npm audit --omit=dev --audit-level=high",
     "test:codec": "node tracking/teltonikaCodec.test.js",
     "test:tcp": "node tracking/tcpServer.test.js",
-    "test:tracking": "npm run test:codec && npm run test:tcp"
+    "test:protocols": "node tracking/multiProtocol.test.js",
+    "test:tracking": "npm run test:codec && npm run test:protocols && npm run test:tcp"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -10,7 +10,15 @@
 const assert = require('assert');
 const net = require('net');
 const { createTrackingServer } = require('./tcpServer');
-const { buildImeiHandshakeFrame, buildTeltonikaPacket } = require('./testHelpers');
+const {
+  buildImeiHandshakeFrame,
+  buildTeltonikaPacket,
+  bcdImei,
+  buildGt06Packet,
+  buildGt06Location,
+} = require('./testHelpers');
+const { PROTOCOL_LOGIN, PROTOCOL_LOCATION } = require('./gt06Protocol');
+const { withChecksum } = require('./multiProtocol.test');
 
 const KNOWN_IMEI = '864636050000001';
 const UNKNOWN_IMEI = '999999999999999';
@@ -136,10 +144,72 @@ async function testChunkedTcpStream() {
   server.close();
 }
 
+async function testMaharashtraPacketFlow() {
+  const receivedPositions = [];
+  const server = await startServer({
+    isImeiAuthorized: (imei) => imei === KNOWN_IMEI,
+    onPositions: (imei, records) => { receivedPositions.push({ imei, records }); },
+  });
+  const port = server.address().port;
+  const socket = await connect(port);
+
+  const payload = [
+    'NMP', 'ABCD01A', '1.6.5', 'NR', '1', 'L', KNOWN_IMEI, 'MH01PB0000',
+    '1', '24032019', '060122', '19.1383000', 'N', '77.3210000', 'E', '022.5',
+    '320.55', '08', '183.5', '1.0', '0.3', 'INA Airtel', '1', '1', '12.5',
+    '4.2', '0', 'C', '25',
+  ].join(',');
+
+  socket.write(Buffer.from(`${withChecksum(payload)}\r\n`, 'ascii'));
+  const ack = await waitForBytes(socket, 5);
+  assert.strictEqual(ack.toString('ascii'), 'ACK\r\n');
+
+  await new Promise((r) => setTimeout(r, 50));
+  assert.strictEqual(receivedPositions.length, 1);
+  assert.strictEqual(receivedPositions[0].imei, KNOWN_IMEI);
+  assert.ok(Math.abs(receivedPositions[0].records[0].latitude - 19.1383) < 0.0000001);
+  assert.strictEqual(receivedPositions[0].records[0].ignition, true);
+  console.log('OK Maharashtra NMP packet accepted over TCP');
+
+  socket.end();
+  server.close();
+}
+
+async function testGt06PacketFlow() {
+  const receivedPositions = [];
+  const server = await startServer({
+    isImeiAuthorized: (imei) => imei === KNOWN_IMEI,
+    onPositions: (imei, records) => { receivedPositions.push({ imei, records }); },
+  });
+  const port = server.address().port;
+  const socket = await connect(port);
+
+  socket.write(buildGt06Packet(PROTOCOL_LOGIN, bcdImei(KNOWN_IMEI), 3));
+  const loginAck = await waitForBytes(socket, 10);
+  assert.strictEqual(loginAck.subarray(0, 2).toString('hex'), '7878');
+  assert.strictEqual(loginAck[3], PROTOCOL_LOGIN);
+  console.log('OK GT06 login accepted over TCP');
+
+  socket.write(buildGt06Packet(PROTOCOL_LOCATION, buildGt06Location({ lat: 19.1383, lng: 77.3210, speed: 42 }), 4));
+  const locationAck = await waitForBytes(socket, 10);
+  assert.strictEqual(locationAck[3], PROTOCOL_LOCATION);
+
+  await new Promise((r) => setTimeout(r, 50));
+  assert.strictEqual(receivedPositions.length, 1);
+  assert.strictEqual(receivedPositions[0].imei, KNOWN_IMEI);
+  assert.ok(Math.abs(receivedPositions[0].records[0].longitude - 77.3210) < 0.000001);
+  console.log('OK GT06 location packet accepted over TCP');
+
+  socket.end();
+  server.close();
+}
+
 async function run() {
   await testAcceptedDeviceFlow();
   await testUnknownDeviceRejected();
   await testChunkedTcpStream();
+  await testMaharashtraPacketFlow();
+  await testGt06PacketFlow();
   console.log('\nALL TCP SERVER TESTS PASSED ✅');
   process.exit(0);
 }

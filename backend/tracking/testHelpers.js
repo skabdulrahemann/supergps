@@ -3,6 +3,7 @@
  * Not used in production code — only by tracking/*.test.js files.
  */
 const { crc16ibm } = require('./teltonikaCodec');
+const { crc16x25 } = require('./gt06Protocol');
 
 function buildImeiHandshakeFrame(imei) {
   const lenBuf = Buffer.alloc(2);
@@ -46,4 +47,60 @@ function buildTeltonikaPacket({ lat, lng, alt = 0, angle = 0, sats = 8, speed = 
   return Buffer.concat([Buffer.alloc(4), lengthBuf, dataField, crcBuf]); // Buffer.alloc(4) = zero preamble
 }
 
-module.exports = { buildImeiHandshakeFrame, buildTeltonikaPacket };
+function bcdImei(imei) {
+  const padded = imei.length % 2 === 0 ? imei : `0${imei}`;
+  return Buffer.from(padded.match(/../g).map((pair) => Number.parseInt(pair, 16)));
+}
+
+function buildGt06Packet(protocol, content, serial = 1) {
+  const length = 1 + content.length + 2 + 2;
+  const body = Buffer.alloc(2 + content.length + 2);
+  body.writeUInt8(length, 0);
+  body.writeUInt8(protocol, 1);
+  content.copy(body, 2);
+  body.writeUInt16BE(serial, body.length - 2);
+
+  const crc = crc16x25(body);
+  const crcBuf = Buffer.alloc(2);
+  crcBuf.writeUInt16BE(crc, 0);
+
+  return Buffer.concat([
+    Buffer.from([0x78, 0x78]),
+    body,
+    crcBuf,
+    Buffer.from([0x0d, 0x0a]),
+  ]);
+}
+
+function buildGt06Location({ lat, lng, speed = 42, course = 180, timestamp = new Date(Date.UTC(2026, 7, 21, 6, 1, 22)) }) {
+  const content = Buffer.alloc(30);
+  content.writeUInt8(timestamp.getUTCFullYear() - 2000, 0);
+  content.writeUInt8(timestamp.getUTCMonth() + 1, 1);
+  content.writeUInt8(timestamp.getUTCDate(), 2);
+  content.writeUInt8(timestamp.getUTCHours(), 3);
+  content.writeUInt8(timestamp.getUTCMinutes(), 4);
+  content.writeUInt8(timestamp.getUTCSeconds(), 5);
+  content.writeUInt8(0xc0 | 8, 6);
+  content.writeUInt32BE(Math.round(Math.abs(lat) * 1800000), 7);
+  content.writeUInt32BE(Math.round(Math.abs(lng) * 1800000), 11);
+  content.writeUInt8(speed, 15);
+  const courseStatus = (lat >= 0 ? 0x0400 : 0) | (lng < 0 ? 0x0800 : 0) | (course & 0x03ff);
+  content.writeUInt16BE(courseStatus, 16);
+  content.writeUInt16BE(404, 18);
+  content.writeUInt8(10, 20);
+  content.writeUInt16BE(0x00d6, 21);
+  content.writeUIntBE(0xcfbd, 23, 3);
+  content.writeUInt8(0, 26);
+  content.writeUInt8(0, 27);
+  content.writeUInt8(0, 28);
+  content.writeUInt8(0, 29);
+  return content;
+}
+
+module.exports = {
+  buildImeiHandshakeFrame,
+  buildTeltonikaPacket,
+  bcdImei,
+  buildGt06Packet,
+  buildGt06Location,
+};
