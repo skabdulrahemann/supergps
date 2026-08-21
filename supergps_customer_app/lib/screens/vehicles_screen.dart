@@ -155,8 +155,13 @@ class _VehicleCard extends StatelessWidget {
     final title = vehicle.vehicleNumber ?? 'Vehicle number pending';
     final model =
         '${vehicle.vehicleBrand ?? 'Vehicle'} ${vehicle.vehicleModel ?? vehicle.vehicleType}';
-    final updated = vehicle.lastSeen ?? '6 sec ago';
-    final address = vehicle.lastLocation ?? 'Pune, Maharashtra';
+    final updated = vehicle.lastSeen ?? 'No GPS yet';
+    final address = vehicle.lastLocation ?? 'Waiting for first GPS fix';
+    final ignition = vehicle.lastIgnition == true
+        ? 'ON'
+        : vehicle.lastIgnition == false
+            ? 'OFF'
+            : 'Unknown';
     return SuperCard(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
@@ -187,7 +192,7 @@ class _VehicleCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w900)),
+                            fontSize: 16.5, fontWeight: FontWeight.w900)),
                     const SizedBox(height: 2),
                     Text(model,
                         maxLines: 1,
@@ -206,7 +211,7 @@ class _VehicleCard extends StatelessWidget {
           _CompactInfoRow(
             items: [
               _InfoMetric('Speed', speed),
-              const _InfoMetric('Ignition', 'ON'),
+              _InfoMetric('Ignition', ignition),
               _InfoMetric('Updated', updated),
             ],
           ),
@@ -223,7 +228,7 @@ class _VehicleCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 12.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -343,7 +348,7 @@ class _CompactInfoRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 10.5,
+                      fontSize: 10,
                       fontWeight: FontWeight.w600),
                 ),
               ],

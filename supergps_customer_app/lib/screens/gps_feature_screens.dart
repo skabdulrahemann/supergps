@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../constants/colors.dart';
 import '../models/vehicle_model.dart';
 import '../services/api_service.dart';
@@ -38,6 +39,14 @@ class LiveTrackingScreen extends StatelessWidget {
     return 'Stopped';
   }
 
+  Future<void> _openMaps(dynamic latitude, dynamic longitude) async {
+    final lat = double.tryParse(latitude?.toString() ?? '');
+    final lng = double.tryParse(longitude?.toString() ?? '');
+    if (lat == null || lng == null) return;
+    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   @override
   Widget build(BuildContext context) {
     final number = vehicle?.vehicleNumber ?? vehicleNumber;
@@ -58,6 +67,31 @@ class LiveTrackingScreen extends StatelessWidget {
       child: FutureBuilder<Map<String, dynamic>?>(
         future: _loadLatest(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Column(
+              children: [
+                const Expanded(
+                  child: _MapMock(
+                    title: 'Tracking unavailable',
+                    subtitle: 'Latest location load nahi ho payi',
+                    icon: Icons.cloud_off_rounded,
+                  ),
+                ),
+                _BottomSheetCard(
+                  children: [
+                    _StatusRow(vehicle: number, status: 'Offline', speed: '0 km/h'),
+                    const Divider(height: 26),
+                    _InfoLine(
+                      icon: Icons.error_outline_rounded,
+                      label: 'Error',
+                      value: snapshot.error.toString().replaceAll('Exception: ', ''),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          }
+
           final data = snapshot.data;
           final position = data?['position'] as Map<String, dynamic>?;
           final vehicleSnapshot = data?['vehicle'] as Map<String, dynamic>?;
@@ -120,6 +154,14 @@ class LiveTrackingScreen extends StatelessWidget {
                       icon: Icons.gps_fixed_rounded,
                       label: 'GPS / Network',
                       value: hasPosition ? 'Received / Online' : 'Waiting'),
+                  if (hasPosition) ...[
+                    const SizedBox(height: 8),
+                    _PrimaryButton(
+                      label: 'Open Location in Maps',
+                      onTap: () => _openMaps(
+                          position!['latitude'], position['longitude']),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -137,6 +179,26 @@ class VehicleDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final number = vehicle?.vehicleNumber ?? _demoVehicle;
+    final speed = vehicle?.speedKmh == null
+        ? '0 km/h'
+        : '${vehicle!.speedKmh!.round()} km/h';
+    final status = vehicle?.liveStatus == 'moving'
+        ? 'Running'
+        : vehicle?.liveStatus == 'idle'
+            ? 'Idle'
+            : vehicle?.liveStatus == 'stopped'
+                ? 'Stopped'
+                : vehicle?.lastSeenAt == null
+                    ? 'No GPS'
+                    : 'Offline';
+    final lastLocation = vehicle?.lastLocation ?? 'Waiting for first GPS fix';
+    final lastUpdate = vehicle?.lastSeen ?? vehicle?.lastSeenAt ?? 'Not received yet';
+    final ignition = vehicle?.lastIgnition == true
+        ? 'ON'
+        : vehicle?.lastIgnition == false
+            ? 'OFF'
+            : 'Unknown';
+
     return DefaultTabController(
       length: 4,
       child: _Page(
@@ -168,25 +230,25 @@ class VehicleDetailsScreen extends StatelessWidget {
                   ListView(
                     padding: const EdgeInsets.all(18),
                     children: [
-                      _MetricGrid(items: const [
-                        _Metric('Speed', '48 km/h', Icons.speed_rounded,
+                      _MetricGrid(items: [
+                        _Metric('Speed', speed, Icons.speed_rounded,
                             AppColors.primary),
-                        _Metric('Fuel', '72%', Icons.local_gas_station_rounded,
+                        _Metric('Status', status, Icons.gps_fixed_rounded,
                             AppColors.warning),
                         _Metric(
-                            'Battery',
-                            '12.8 V',
-                            Icons.battery_charging_full_rounded,
+                            'Ignition',
+                            ignition,
+                            Icons.vpn_key_rounded,
                             AppColors.success),
-                        _Metric('Odometer', '24,820 km',
-                            Icons.social_distance_rounded, AppColors.purple),
+                        _Metric('Satellites', '${vehicle?.lastSatellites ?? '-'}',
+                            Icons.satellite_alt_rounded, AppColors.purple),
                       ]),
                       const SizedBox(height: 14),
-                      const _InfoPanel(title: 'Last Location', lines: [
+                      _InfoPanel(title: 'Last Location', lines: [
                         _Line(Icons.location_on_rounded, 'Location',
-                            _demoAddress),
+                            lastLocation),
                         _Line(Icons.access_time_rounded, 'Last Update',
-                            'Today, 6:18 PM'),
+                            lastUpdate),
                       ]),
                       const SizedBox(height: 14),
                       Wrap(
@@ -209,11 +271,11 @@ class VehicleDetailsScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const _SimpleList(items: [
-                    'IMEI: 861234567890123',
-                    'Device: SG-4G-Pro',
-                    'SIM: 899100000000',
-                    'Installed by: Super GPS Dealer'
+                  _SimpleList(items: [
+                    'IMEI: ${vehicle?.imeiNumber ?? 'Not assigned'}',
+                    'Serial: ${vehicle?.deviceSerialNumber ?? 'Not assigned'}',
+                    'SIM: ${vehicle?.simNumber ?? 'Not assigned'}',
+                    'Activation: ${vehicle?.activationStatus ?? 'pending'}'
                   ]),
                   const _SimpleList(items: [
                     'Overspeed • Today 5:42 PM',

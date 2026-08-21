@@ -47,7 +47,7 @@ class BottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 60,
+          height: 66,
           child: Row(
             children: List.generate(_items.length, (i) {
               final selected = i == currentIndex;
@@ -58,13 +58,13 @@ class BottomNav extends StatelessWidget {
                   child: InkWell(
                     onTap: () => onTap(i),
                     child: Transform.translate(
-                      offset: const Offset(0, -7),
+                      offset: const Offset(0, -4),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            width: 48,
-                            height: 48,
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
                               color: selected
                                   ? AppColors.textPrimary
@@ -83,9 +83,9 @@ class BottomNav extends StatelessWidget {
                                 color: selected
                                     ? AppColors.primary
                                     : AppColors.textPrimary,
-                                size: 24),
+                                size: 22),
                           ),
-                          const SizedBox(height: 1),
+                          const SizedBox(height: 2),
                           Text(
                             item.label,
                             style: TextStyle(

@@ -12,9 +12,30 @@ exports.startActivation = async (req, res) => {
     const order = await Order.findByPk(orderId);
     if (!order) return res.status(404).json({ message: 'Order not found' });
     if (order.isActivated) return res.status(400).json({ message: 'Order already activated' });
+    if (!imeiNumber || !deviceSerialNumber) {
+      return res.status(400).json({ message: 'IMEI number and device serial number are required' });
+    }
+
+    const existingDevice = await Vehicle.findOne({ where: { imeiNumber } });
+    if (existingDevice) {
+      return res.status(400).json({ message: 'A device with this IMEI already exists' });
+    }
+
+    const existingSerial = await Vehicle.findOne({ where: { deviceSerialNumber } });
+    if (existingSerial) {
+      return res.status(400).json({ message: 'A device with this serial number already exists' });
+    }
+
+    const existingOrderVehicle = await Vehicle.findOne({ where: { orderId } });
+    if (existingOrderVehicle) {
+      return res.status(400).json({ message: 'Activation already started for this order' });
+    }
 
     const dealer = await Dealer.findOne({ where: { userId: req.user.id } });
-    const dealerId = dealer ? dealer.id : null;
+    const dealerId = dealer ? dealer.id : order.dealerId;
+    if (req.user.role === 'dealer' && (!dealer || order.dealerId !== dealer.id)) {
+      return res.status(403).json({ message: 'This order is not assigned to your dealership' });
+    }
 
     const vehicle = await Vehicle.create({
       customerId: order.customerId,
@@ -75,6 +96,7 @@ exports.updateStep = async (req, res) => {
 
       const order = await Order.findByPk(log.orderId);
       order.isActivated = true;
+      order.orderStatus = 'delivered';
       await order.save();
     } else if (anyFailed) {
       vehicle.activationStatus = 'pending';

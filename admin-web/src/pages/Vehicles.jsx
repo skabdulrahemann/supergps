@@ -111,6 +111,19 @@ export default function Vehicles() {
     deactivated: { icon: XCircle, color: 'text-rose-500', bg: 'bg-rose-50', label: 'Deactivated' }
   };
 
+  const formatLiveStatus = (vehicle) => {
+    if (!vehicle.lastSeenAt && !vehicle.lastLocation) return { label: 'No GPS yet', color: 'badge-yellow' };
+    if (vehicle.liveStatus === 'moving') return { label: 'Moving', color: 'badge-green' };
+    if (vehicle.liveStatus === 'idle') return { label: 'Idle', color: 'badge-blue' };
+    if (vehicle.liveStatus === 'stopped') return { label: 'Stopped', color: 'badge-red' };
+    return { label: 'Offline', color: 'badge-yellow' };
+  };
+
+  const formatSpeed = (value) => {
+    if (value === null || value === undefined || value === '') return '0 km/h';
+    return `${Math.round(Number(value) || 0)} km/h`;
+  };
+
   if (loading) return <div className="flex items-center justify-center h-96"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div>;
 
   return (
@@ -154,6 +167,7 @@ export default function Vehicles() {
         {filtered.map((v) => {
           const cfg = statusConfig[v.activationStatus] || statusConfig.pending;
           const StatusIcon = cfg.icon;
+          const live = formatLiveStatus(v);
           return (
             <div key={v.id} className="card hover:shadow-lg transition-all">
               <div className="flex items-start justify-between">
@@ -167,6 +181,9 @@ export default function Vehicles() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
+                  <span className={`badge ${live.color}`}>
+                    {live.label}
+                  </span>
                   <span className={`badge ${v.activationStatus === 'activated' ? 'badge-green' : v.activationStatus === 'in_progress' ? 'badge-blue' : v.activationStatus === 'deactivated' ? 'badge-red' : 'badge-yellow'}`}>
                     {v.activationStatus}
                   </span>
@@ -182,9 +199,23 @@ export default function Vehicles() {
                   <p className="text-xs text-dark-500 uppercase">Serial</p>
                   <p className="font-mono text-sm font-semibold text-dark-800 mt-1">{v.deviceSerialNumber}</p>
                 </div>
+                <div className="bg-dark-50 rounded-xl p-3">
+                  <p className="text-xs text-dark-500 uppercase">Speed</p>
+                  <p className="text-sm font-semibold text-dark-800 mt-1">{formatSpeed(v.speedKmh ?? v.lastSpeedKmh)}</p>
+                </div>
+                <div className="bg-dark-50 rounded-xl p-3">
+                  <p className="text-xs text-dark-500 uppercase">Last Seen</p>
+                  <p className="text-sm font-semibold text-dark-800 mt-1">{v.lastSeen || (v.lastSeenAt ? new Date(v.lastSeenAt).toLocaleString() : 'No GPS yet')}</p>
+                </div>
               </div>
 
               <div className="mt-4 pt-4 border-t border-dark-100 space-y-2">
+                <div className="flex items-start justify-between gap-4 text-sm">
+                  <span className="text-dark-500 flex items-center gap-2"><MapPin className="w-4 h-4" /> Location</span>
+                  <span className="font-medium text-dark-800 text-right">
+                    {v.lastLocation || (v.lastLatitude && v.lastLongitude ? `${v.lastLatitude}, ${v.lastLongitude}` : 'Waiting for first GPS fix')}
+                  </span>
+                </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-dark-500 flex items-center gap-2"><UserCheck className="w-4 h-4" /> Customer</span>
                   <span className="font-medium text-dark-800">{v.customer?.name} ({v.customer?.phone})</span>

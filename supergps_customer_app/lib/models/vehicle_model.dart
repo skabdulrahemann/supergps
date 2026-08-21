@@ -25,6 +25,8 @@ class VehicleModel {
   final double? lastLatitude;
   final double? lastLongitude;
   final String? lastSeenAt;
+  final bool? lastIgnition;
+  final int? lastSatellites;
 
   VehicleModel({
     required this.id,
@@ -50,6 +52,8 @@ class VehicleModel {
     this.lastLatitude,
     this.lastLongitude,
     this.lastSeenAt,
+    this.lastIgnition,
+    this.lastSatellites,
   });
 
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
@@ -88,6 +92,10 @@ class VehicleModel {
           ? double.tryParse(json['lastLongitude'].toString())
           : null,
       lastSeenAt: json['lastSeenAt'],
+      lastIgnition: json['lastIgnition'],
+      lastSatellites: json['lastSatellites'] != null
+          ? int.tryParse(json['lastSatellites'].toString())
+          : null,
     );
   }
 }

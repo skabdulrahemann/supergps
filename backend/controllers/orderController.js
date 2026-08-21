@@ -95,6 +95,11 @@ exports.assignDealer = async (req, res) => {
     if (order.orderStatus === 'placed') order.orderStatus = 'confirmed';
     await order.save();
 
+    await Vehicle.update(
+      { dealerId: dealer.id },
+      { where: { orderId: order.id } }
+    );
+
     const updatedOrder = await Order.findByPk(order.id, {
       include: [
         { model: User, as: 'customer', attributes: ['name', 'email', 'phone'] },
