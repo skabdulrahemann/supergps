@@ -32,8 +32,12 @@ VITE_DEV_API_PROXY=http://13.211.206.24:5000
 For production:
 
 ```env
-VITE_API_BASE_URL=http://13.211.206.24:5000/api
+VITE_API_BASE_URL=/api
 ```
+
+On Vercel, `vercel.json` rewrites `/api/*` to the AWS backend. Do not set
+`VITE_API_BASE_URL` to the raw `http://13.211.206.24:5000/api` URL for the
+Vercel frontend, because the deployed site runs on HTTPS.
 
 ## Features
 
