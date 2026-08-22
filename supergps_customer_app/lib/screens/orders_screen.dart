@@ -44,8 +44,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
         title: const Text('My Orders',
             style: TextStyle(
                 color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-                fontFamily: 'Inter')),
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Poppins')),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -69,14 +69,14 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                       fontSize: 18,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.textSecondary,
-                                      fontFamily: 'Inter'))),
+                                      fontFamily: 'Poppins'))),
                           const SizedBox(height: 8),
                           const Center(
                               child: Text('Your orders will appear here',
                                   style: TextStyle(
                                       fontSize: 14,
                                       color: AppColors.textMuted,
-                                      fontFamily: 'Inter'))),
+                                      fontFamily: 'Poppins'))),
                         ],
                       )
                     : ListView.builder(
@@ -148,20 +148,21 @@ class _OrderCard extends StatelessWidget {
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textSecondary,
-                          fontFamily: 'Inter')),
+                          fontFamily: 'Poppins')),
                 ),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                      color: _statusColor(order.orderStatus).withValues(alpha: 0.1),
+                      color: _statusColor(order.orderStatus)
+                          .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20)),
                   child: Text(order.orderStatus.toUpperCase(),
                       style: TextStyle(
                           fontSize: 10,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                           color: _statusColor(order.orderStatus),
-                          fontFamily: 'Inter')),
+                          fontFamily: 'Poppins')),
                 ),
               ],
             ),
@@ -196,16 +197,16 @@ class _OrderCard extends StatelessWidget {
                       Text(order.productName,
                           style: const TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
-                              fontFamily: 'Inter')),
+                              fontFamily: 'Poppins')),
                       const SizedBox(height: 4),
                       Text(vehicleLabel,
                           style: const TextStyle(
                               fontSize: 14,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                               color: AppColors.primary,
-                              fontFamily: 'Inter')),
+                              fontFamily: 'Poppins')),
                       if (order.targetVehicleBrand != null ||
                           order.targetVehicleModel != null)
                         Text(
@@ -214,7 +215,7 @@ class _OrderCard extends StatelessWidget {
                             style: const TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textSecondary,
-                                fontFamily: 'Inter')),
+                                fontFamily: 'Poppins')),
                     ],
                   ),
                 ),
@@ -239,9 +240,9 @@ class _OrderCard extends StatelessWidget {
                 Text('₹${order.totalAmount.toStringAsFixed(0)}',
                     style: const TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.primary,
-                        fontFamily: 'Inter')),
+                        fontFamily: 'Poppins')),
                 if (order.salesCode != null)
                   Container(
                     padding:
@@ -254,7 +255,7 @@ class _OrderCard extends StatelessWidget {
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: AppColors.purple,
-                            fontFamily: 'Inter')),
+                            fontFamily: 'Poppins')),
                   ),
               ],
             ),
@@ -278,7 +279,7 @@ class _OrderCard extends StatelessWidget {
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
-                          fontFamily: 'Inter'),
+                          fontFamily: 'Poppins'),
                     ),
                   ),
                 ],
@@ -301,7 +302,7 @@ class _OrderCard extends StatelessWidget {
                       color: order.paymentStatus == 'paid'
                           ? AppColors.success
                           : AppColors.warning,
-                      fontFamily: 'Inter'),
+                      fontFamily: 'Poppins'),
                 ),
                 const SizedBox(width: 12),
                 if (order.isActivated)
@@ -315,7 +316,7 @@ class _OrderCard extends StatelessWidget {
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: AppColors.success,
-                              fontFamily: 'Inter')),
+                              fontFamily: 'Poppins')),
                     ],
                   ),
               ],
@@ -355,4 +356,3 @@ class _OrderCard extends StatelessWidget {
     return 'Order placed. Admin will assign a dealer.';
   }
 }
-

@@ -253,7 +253,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
             Text(number,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w900)),
+                style: const TextStyle(fontWeight: FontWeight.w700)),
             Text(status,
                 style: const TextStyle(
                     color: AppColors.textSecondary,
@@ -537,7 +537,7 @@ class _SocketStatusBanner extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(text,
-                style: TextStyle(color: color, fontWeight: FontWeight.w900)),
+                style: TextStyle(color: color, fontWeight: FontWeight.w700)),
           ],
         ),
       ),
@@ -573,7 +573,7 @@ class _NoGpsState extends StatelessWidget {
           const SizedBox(height: 12),
           Text(message,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w800)),
+              style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -1232,8 +1232,8 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 const Text('Login Security',
                     style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        fontFamily: 'Inter')),
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Poppins')),
                 const SizedBox(height: 10),
                 _CompactSwitchTile(
                   icon: Icons.fingerprint_rounded,
@@ -1299,7 +1299,7 @@ class LegalScreen extends StatelessWidget {
               fontSize: 15,
               height: 1.5,
               color: AppColors.textSecondary,
-              fontFamily: 'Inter'),
+              fontFamily: 'Poppins'),
         ),
       ),
     );
@@ -1319,8 +1319,8 @@ class _SettingsGroupTitle extends StatelessWidget {
         style: const TextStyle(
           color: AppColors.textSecondary,
           fontSize: 12,
-          fontWeight: FontWeight.w900,
-          fontFamily: 'Inter',
+          fontWeight: FontWeight.w700,
+          fontFamily: 'Poppins',
         ),
       ),
     );
@@ -1362,13 +1362,13 @@ class _CompactSwitchTile extends StatelessWidget {
             children: [
               Text(title,
                   style: const TextStyle(
-                      fontWeight: FontWeight.w900, fontFamily: 'Inter')),
+                      fontWeight: FontWeight.w700, fontFamily: 'Poppins')),
               const SizedBox(height: 2),
               Text(subtitle,
                   style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12,
-                      fontFamily: 'Inter')),
+                      fontFamily: 'Poppins')),
             ],
           ),
         ),
@@ -1402,7 +1402,7 @@ class _Page extends StatelessWidget {
       appBar: AppBar(
         title: Text(title,
             style: const TextStyle(
-                fontWeight: FontWeight.w900, fontFamily: 'Inter')),
+                fontWeight: FontWeight.w700, fontFamily: 'Poppins')),
         actions: action == null ? null : [action!],
       ),
       body: SafeArea(child: child),
@@ -1636,11 +1636,11 @@ class _StatusRow extends StatelessWidget {
             Text(vehicle,
                 style: const TextStyle(
                     fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Inter')),
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Poppins')),
             Text('$status • $speed',
                 style: const TextStyle(
-                    color: AppColors.textSecondary, fontFamily: 'Inter')),
+                    color: AppColors.textSecondary, fontFamily: 'Poppins')),
           ]),
         ),
       ],
@@ -1679,19 +1679,19 @@ class _VehicleHero extends StatelessWidget {
                     style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        fontFamily: 'Inter')),
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Poppins')),
                 Text(model.isEmpty ? 'Vehicle details pending' : model,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        color: Colors.white70, fontFamily: 'Inter')),
+                        color: Colors.white70, fontFamily: 'Poppins')),
               ])),
           Text(status,
               style: const TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: 'Inter')),
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Poppins')),
         ],
       ),
     );
@@ -1739,14 +1739,14 @@ class _MetricGrid extends StatelessWidget {
                     children: [
                   Text(item.value,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                           fontSize: 16,
-                          fontFamily: 'Inter')),
+                          fontFamily: 'Poppins')),
                   Text(item.label,
                       style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 12,
-                          fontFamily: 'Inter')),
+                          fontFamily: 'Poppins')),
                 ])),
           ]),
         );
@@ -1791,19 +1791,19 @@ class _FeatureTile extends StatelessWidget {
         ),
         title: Text(title,
             style: const TextStyle(
-                fontWeight: FontWeight.w900, fontFamily: 'Inter')),
+                fontWeight: FontWeight.w700, fontFamily: 'Poppins')),
         subtitle: Text(subtitle,
             style: const TextStyle(
                 color: AppColors.textSecondary,
-                fontFamily: 'Inter',
+                fontFamily: 'Poppins',
                 fontSize: 12)),
         trailing: trailing == null
             ? const Icon(Icons.chevron_right_rounded)
             : Text(trailing!,
                 style: TextStyle(
                     color: color,
-                    fontWeight: FontWeight.w800,
-                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Poppins',
                     fontSize: 12)),
       ),
     );
@@ -1845,9 +1845,9 @@ class _MenuCard extends StatelessWidget {
           Text(title,
               style: const TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
-                  fontFamily: 'Inter')),
+                  fontFamily: 'Poppins')),
         ]),
       ),
     );
@@ -1877,12 +1877,12 @@ class _InfoBanner extends StatelessWidget {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title,
               style: const TextStyle(
-                  fontWeight: FontWeight.w900, fontFamily: 'Inter')),
+                  fontWeight: FontWeight.w700, fontFamily: 'Poppins')),
           Text(subtitle,
               style: const TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,
-                  fontFamily: 'Inter')),
+                  fontFamily: 'Poppins')),
         ])),
       ]),
     );
@@ -1905,11 +1905,11 @@ class _InfoLine extends StatelessWidget {
         const SizedBox(width: 8),
         Text('$label: ',
             style: const TextStyle(
-                color: AppColors.textSecondary, fontFamily: 'Inter')),
+                color: AppColors.textSecondary, fontFamily: 'Poppins')),
         Expanded(
             child: Text(value,
                 style: const TextStyle(
-                    fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+                    fontWeight: FontWeight.w600, fontFamily: 'Poppins'),
                 overflow: TextOverflow.ellipsis)),
       ]),
     );
@@ -1939,7 +1939,7 @@ class _InfoPanel extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title,
             style: const TextStyle(
-                fontWeight: FontWeight.w900, fontFamily: 'Inter')),
+                fontWeight: FontWeight.w700, fontFamily: 'Poppins')),
         const SizedBox(height: 12),
         ...lines.map(
             (l) => _InfoLine(icon: l.icon, label: l.label, value: l.value)),
@@ -1987,7 +1987,7 @@ class _PrimaryButton extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16))),
         child: Text(label,
             style: const TextStyle(
-                fontWeight: FontWeight.w900, fontFamily: 'Inter')),
+                fontWeight: FontWeight.w700, fontFamily: 'Poppins')),
       ),
     );
   }

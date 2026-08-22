@@ -35,8 +35,8 @@ class OrderDetailScreen extends StatelessWidget {
         title: const Text('Order Details',
             style: TextStyle(
                 color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-                fontFamily: 'Inter')),
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Poppins')),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -64,17 +64,17 @@ class OrderDetailScreen extends StatelessWidget {
                       child: Text(order.orderNumber,
                           style: const TextStyle(
                               fontSize: 14,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                               color: AppColors.textSecondary,
-                              fontFamily: 'Inter')),
+                              fontFamily: 'Poppins')),
                     ),
                     const SizedBox(height: 16),
                     Text('₹${NumberFormat('#,##0').format(order.totalAmount)}',
                         style: const TextStyle(
                             fontSize: 36,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.primary,
-                            fontFamily: 'Inter')),
+                            fontFamily: 'Poppins')),
                     const SizedBox(height: 14),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -168,9 +168,9 @@ class _StatusBadge extends StatelessWidget {
       child: Text(label,
           style: TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               color: color,
-              fontFamily: 'Inter')),
+              fontFamily: 'Poppins')),
     );
   }
 }
@@ -195,9 +195,9 @@ class _Section extends StatelessWidget {
           Text(title,
               style: const TextStyle(
                   fontSize: 15,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
-                  fontFamily: 'Inter')),
+                  fontFamily: 'Poppins')),
           const SizedBox(height: 14),
           ...children,
         ],
@@ -225,7 +225,7 @@ class _InfoRow extends StatelessWidget {
                   style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
-                      fontFamily: 'Inter'))),
+                      fontFamily: 'Poppins'))),
           Expanded(
             flex: 3,
             child: Text(value,
@@ -233,7 +233,7 @@ class _InfoRow extends StatelessWidget {
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: valueColor ?? AppColors.textPrimary,
-                    fontFamily: 'Inter'),
+                    fontFamily: 'Poppins'),
                 textAlign: TextAlign.right),
           ),
         ],
@@ -241,4 +241,3 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
-

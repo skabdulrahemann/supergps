@@ -72,7 +72,7 @@ class TrackingBottomSheet extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w900),
+                              fontSize: 18, fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 4),
                         _StatusPill(status: status),
@@ -100,7 +100,7 @@ class TrackingBottomSheet extends StatelessWidget {
                       'Speed',
                       '${(position?.speedKmh ?? 0).round()} km/h',
                       Icons.speed_rounded),
-                  _TrackingInfo('Ignition', _ignitionText(position?.ignition),
+                  _TrackingInfo('Ignition', _ignitionText(position),
                       Icons.vpn_key_rounded),
                   _TrackingInfo('GPS', position == null ? 'Waiting' : 'Fixed',
                       Icons.gps_fixed_rounded),
@@ -140,9 +140,11 @@ class TrackingBottomSheet extends StatelessWidget {
     );
   }
 
-  String _ignitionText(bool? ignition) {
-    if (ignition == true) return 'ON';
-    if (ignition == false) return 'OFF';
+  String _ignitionText(VehiclePosition? position) {
+    if (position == null) return 'Unknown';
+    if (position.speedKmh > 3) return 'ON';
+    if (position.ignition == true) return 'ON';
+    if (position.ignition == false) return 'OFF';
     return 'Unknown';
   }
 }
@@ -168,7 +170,7 @@ class _StatusPill extends StatelessWidget {
       ),
       child: Text(
         status,
-        style: TextStyle(color: color, fontWeight: FontWeight.w900),
+        style: TextStyle(color: color, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -219,7 +221,7 @@ class _InfoGrid extends StatelessWidget {
                       item.value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w900),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                     Text(
                       item.label,
@@ -267,7 +269,7 @@ class _Line extends StatelessWidget {
               Text(value,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w900)),
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
             ],
           ),
         ),

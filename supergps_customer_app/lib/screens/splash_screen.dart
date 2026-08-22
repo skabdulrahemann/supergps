@@ -99,7 +99,7 @@ class _SplashScreenState extends State<SplashScreen>
             const Text(AppStrings.brandName,
                 style: TextStyle(
                     fontSize: 34,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 0.8)),
             const SizedBox(height: 8),
             const Text(AppStrings.tagline,

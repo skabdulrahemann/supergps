@@ -67,7 +67,7 @@ class BottomNav extends StatelessWidget {
                             height: 44,
                             decoration: BoxDecoration(
                               color: selected
-                                  ? AppColors.textPrimary
+                                  ? AppColors.primary
                                   : AppColors.primary,
                               shape: BoxShape.circle,
                               boxShadow: [
@@ -80,9 +80,7 @@ class BottomNav extends StatelessWidget {
                               ],
                             ),
                             child: Icon(icon,
-                                color: selected
-                                    ? AppColors.primary
-                                    : AppColors.textPrimary,
+                                color: selected ? Colors.white : Colors.white,
                                 size: 22),
                           ),
                           const SizedBox(height: 2),
@@ -90,8 +88,8 @@ class BottomNav extends StatelessWidget {
                             item.label,
                             style: TextStyle(
                               fontSize: 9,
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w800,
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.w600,
                               color: selected
                                   ? AppColors.textPrimary
                                   : AppColors.textMuted,
@@ -112,7 +110,7 @@ class BottomNav extends StatelessWidget {
                     children: [
                       Icon(icon,
                           color: selected
-                              ? AppColors.textPrimary
+                              ? AppColors.primary
                               : AppColors.textMuted,
                           size: 22),
                       const SizedBox(height: 3),
@@ -120,9 +118,9 @@ class BottomNav extends StatelessWidget {
                         item.label,
                         style: TextStyle(
                           fontSize: 10,
-                          fontFamily: 'Inter',
+                          fontFamily: 'Poppins',
                           fontWeight:
-                              selected ? FontWeight.w800 : FontWeight.w600,
+                              selected ? FontWeight.w600 : FontWeight.w600,
                           color: selected
                               ? AppColors.textPrimary
                               : AppColors.textMuted,

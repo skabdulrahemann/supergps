@@ -65,7 +65,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
         title: const Text('My Vehicles',
-            style: TextStyle(fontWeight: FontWeight.w900)),
+            style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -75,7 +75,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                 style: const TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 12,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -158,11 +158,16 @@ class _VehicleCard extends StatelessWidget {
         '${vehicle.vehicleBrand ?? 'Vehicle'} ${vehicle.vehicleModel ?? vehicle.vehicleType}';
     final updated = vehicle.lastSeen ?? 'No GPS yet';
     final address = vehicle.lastLocation ?? 'Waiting for first GPS fix';
-    final ignition = vehicle.lastIgnition == true
+    final isMoving = (vehicle.speedKmh ?? 0) > 3 ||
+        vehicle.liveStatus?.toLowerCase() == 'moving' ||
+        vehicle.liveStatus?.toLowerCase() == 'running';
+    final ignition = isMoving
         ? 'ON'
-        : vehicle.lastIgnition == false
-            ? 'OFF'
-            : 'Unknown';
+        : vehicle.lastIgnition == true
+            ? 'ON'
+            : vehicle.lastIgnition == false
+                ? 'OFF'
+                : 'Unknown';
     return SuperCard(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
@@ -190,7 +195,7 @@ class _VehicleCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            fontSize: 16.5, fontWeight: FontWeight.w900)),
+                            fontSize: 16.5, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 2),
                     Text(model,
                         maxLines: 1,
@@ -253,7 +258,7 @@ class _VehicleCard extends StatelessWidget {
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -400,7 +405,7 @@ class _VehicleActionsSheet extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w900)),
+                              fontSize: 18, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 2),
                       Text(model.isEmpty ? status : '$model - $status',
                           maxLines: 1,
@@ -487,7 +492,7 @@ class _SheetActionButton extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
@@ -535,7 +540,7 @@ class _CompactInfoRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      fontSize: 13.5, fontWeight: FontWeight.w900),
+                      fontSize: 13.5, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 1),
                 Text(
@@ -624,7 +629,7 @@ class _SearchAndFilters extends StatelessWidget {
                   backgroundColor: AppColors.surface,
                   labelStyle: TextStyle(
                       color: AppColors.textPrimary,
-                      fontWeight: selected ? FontWeight.w900 : FontWeight.w700),
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w700),
                   side: BorderSide(
                       color:
                           selected ? AppColors.primaryDark : AppColors.border),

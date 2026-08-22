@@ -24,13 +24,13 @@ class SuperCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.025),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: AppColors.primary.withValues(alpha: 0.055),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -39,7 +39,7 @@ class SuperCard extends StatelessWidget {
 
     if (onTap == null) return card;
     return InkWell(
-        onTap: onTap, borderRadius: BorderRadius.circular(16), child: card);
+        onTap: onTap, borderRadius: BorderRadius.circular(20), child: card);
   }
 }
 
@@ -72,7 +72,7 @@ class SuperButton extends StatelessWidget {
         ? Colors.white
         : secondary
             ? AppColors.textPrimary
-            : AppColors.textPrimary;
+            : Colors.white;
 
     return SizedBox(
       height: 52,
@@ -93,10 +93,10 @@ class SuperButton extends StatelessWidget {
           foregroundColor: foreground,
           disabledBackgroundColor: AppColors.border,
           disabledForegroundColor: AppColors.textMuted,
-          textStyle:
-              const TextStyle(fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+          textStyle: const TextStyle(
+              fontWeight: FontWeight.w600, fontFamily: 'Poppins'),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             side: secondary
                 ? const BorderSide(color: AppColors.border)
                 : BorderSide.none,
@@ -124,9 +124,9 @@ class SectionHeader extends StatelessWidget {
             title,
             style: const TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
-              fontFamily: 'Inter',
+              fontFamily: 'Poppins',
             ),
           ),
         ),
@@ -134,7 +134,7 @@ class SectionHeader extends StatelessWidget {
           TextButton(
             onPressed: onAction,
             child: Text(actionLabel!,
-                style: const TextStyle(fontWeight: FontWeight.w800)),
+                style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
       ],
     );
@@ -175,8 +175,8 @@ class StatusBadge extends StatelessWidget {
             style: TextStyle(
               color: color,
               fontSize: compact ? 10 : 11,
-              fontWeight: FontWeight.w900,
-              fontFamily: 'Inter',
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Poppins',
             ),
           ),
         ],
@@ -212,7 +212,7 @@ class InfoRow extends StatelessWidget {
               value,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
                   fontSize: 13),
             ),
@@ -252,13 +252,13 @@ class EmptyState extends StatelessWidget {
               height: 76,
               decoration: BoxDecoration(
                   color: AppColors.softYellow,
-                  borderRadius: BorderRadius.circular(24)),
+                  borderRadius: BorderRadius.circular(22)),
               child: Icon(icon, color: AppColors.primaryDark, size: 38),
             ),
             const SizedBox(height: 18),
             Text(title,
                 style:
-                    const TextStyle(fontSize: 19, fontWeight: FontWeight.w900)),
+                    const TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Text(
               subtitle,

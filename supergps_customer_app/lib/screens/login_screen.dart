@@ -80,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(AppStrings.brandName,
                         style: TextStyle(
                             fontSize: 23,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: 0.4)),
                     Text(AppStrings.tagline,
                         style: TextStyle(
@@ -92,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 46),
             const Text(AppStrings.loginTitle,
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900)),
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             const Text(AppStrings.loginSubtitle,
                 style: TextStyle(
@@ -195,7 +195,7 @@ class _Label extends StatelessWidget {
     return Text(text,
         style: const TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             color: AppColors.textPrimary));
   }
 }

@@ -20,15 +20,43 @@ class SuperGpsCustomerApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
-          fontFamily: 'Inter',
+          fontFamily: 'Poppins',
           scaffoldBackgroundColor: AppColors.bg,
+          canvasColor: AppColors.bg,
           colorScheme: ColorScheme.fromSeed(
             seedColor: AppColors.primary,
             primary: AppColors.primary,
             secondary: AppColors.accent,
             surface: AppColors.surface,
+            surfaceContainerHighest: const Color(0xFFEFF6FF),
             onPrimary: AppColors.textPrimary,
             onSurface: AppColors.textPrimary,
+          ),
+          cardTheme: CardThemeData(
+            color: AppColors.surface,
+            elevation: 0,
+            margin: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+              side: const BorderSide(color: AppColors.border),
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              textStyle: const TextStyle(fontWeight: FontWeight.w600),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+          textButtonTheme: TextButtonThemeData(
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              textStyle: const TextStyle(fontWeight: FontWeight.w600),
+            ),
           ),
           textSelectionTheme:
               const TextSelectionThemeData(cursorColor: AppColors.textPrimary),
@@ -36,17 +64,17 @@ class SuperGpsCustomerApp extends StatelessWidget {
             filled: true,
             fillColor: AppColors.surface,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               borderSide: const BorderSide(color: AppColors.border),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               borderSide: const BorderSide(color: AppColors.border),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(18),
               borderSide:
-                  const BorderSide(color: AppColors.primaryDark, width: 1.5),
+                  const BorderSide(color: AppColors.primary, width: 1.5),
             ),
           ),
           appBarTheme: const AppBarTheme(

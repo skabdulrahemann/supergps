@@ -36,7 +36,7 @@ class CustomTextField extends StatelessWidget {
             fontSize: 14,
             fontWeight: FontWeight.w500,
             color: AppColors.textPrimary,
-            fontFamily: 'Inter',
+            fontFamily: 'Poppins',
           ),
         ),
         const SizedBox(height: 6),
@@ -46,11 +46,11 @@ class CustomTextField extends StatelessWidget {
           keyboardType: keyboardType,
           maxLines: maxLines,
           validator: validator,
-          style: const TextStyle(fontSize: 15, fontFamily: 'Inter'),
+          style: const TextStyle(fontSize: 15, fontFamily: 'Poppins'),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(
-                color: AppColors.textMuted, fontFamily: 'Inter'),
+                color: AppColors.textMuted, fontFamily: 'Poppins'),
             prefixIcon: prefixIcon != null
                 ? Icon(prefixIcon, color: AppColors.textMuted, size: 20)
                 : null,

@@ -88,7 +88,7 @@ class _ShopScreenState extends State<ShopScreen> {
   void _showMsg(String msg, bool isError) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: const TextStyle(fontFamily: 'Inter')),
+        content: Text(msg, style: const TextStyle(fontFamily: 'Poppins')),
         backgroundColor: isError ? AppColors.error : AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -108,8 +108,8 @@ class _ShopScreenState extends State<ShopScreen> {
         title: const Text('Add Vehicle & Order',
             style: TextStyle(
                 color: AppColors.textPrimary,
-                fontWeight: FontWeight.w900,
-                fontFamily: 'Inter')),
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Poppins')),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -158,8 +158,8 @@ class _ShopScreenState extends State<ShopScreen> {
                       : const Text('Place Order for This Vehicle',
                           style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              fontFamily: 'Inter')),
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Poppins')),
                 ),
               ),
             ],
@@ -198,17 +198,17 @@ class _ShopScreenState extends State<ShopScreen> {
                   style: TextStyle(
                       color: AppColors.accent,
                       fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Poppins',
                       letterSpacing: 0.5)),
               SizedBox(height: 10),
               Text('Add vehicle.\nPlace order.\nGet activation done.',
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 25,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                       height: 1.12,
-                      fontFamily: 'Inter')),
+                      fontFamily: 'Poppins')),
               SizedBox(height: 10),
               Text(
                   'Ek vehicle duplicate nahi hoga. Dealer assignment admin se hoga.',
@@ -216,7 +216,7 @@ class _ShopScreenState extends State<ShopScreen> {
                       color: Colors.white70,
                       fontSize: 13,
                       height: 1.45,
-                      fontFamily: 'Inter')),
+                      fontFamily: 'Poppins')),
             ],
           ),
         ],
@@ -231,15 +231,15 @@ class _ShopScreenState extends State<ShopScreen> {
         Text(title,
             style: const TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
-                fontFamily: 'Inter')),
+                fontFamily: 'Poppins')),
         const SizedBox(height: 3),
         Text(subtitle,
             style: const TextStyle(
                 fontSize: 12.5,
                 color: AppColors.textSecondary,
-                fontFamily: 'Inter')),
+                fontFamily: 'Poppins')),
       ],
     );
   }
@@ -298,11 +298,11 @@ class _ShopScreenState extends State<ShopScreen> {
                       Text(product.name,
                           style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                               color: selected
                                   ? Colors.white
                                   : AppColors.textPrimary,
-                              fontFamily: 'Inter')),
+                              fontFamily: 'Poppins')),
                       const SizedBox(height: 4),
                       Text(product.description,
                           maxLines: 2,
@@ -313,7 +313,7 @@ class _ShopScreenState extends State<ShopScreen> {
                               color: selected
                                   ? Colors.white70
                                   : AppColors.textSecondary,
-                              fontFamily: 'Inter')),
+                              fontFamily: 'Poppins')),
                     ],
                   ),
                 ),
@@ -321,9 +321,9 @@ class _ShopScreenState extends State<ShopScreen> {
                 Text('₹${product.price.toStringAsFixed(0)}',
                     style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                         color: selected ? Colors.white : AppColors.primary,
-                        fontFamily: 'Inter')),
+                        fontFamily: 'Poppins')),
               ],
             ),
           ),
@@ -372,9 +372,9 @@ class _ShopScreenState extends State<ShopScreen> {
                   backgroundColor: AppColors.bg,
                   labelStyle: TextStyle(
                       color: selected ? Colors.white : AppColors.textPrimary,
-                      fontFamily: 'Inter',
+                      fontFamily: 'Poppins',
                       fontSize: 12,
-                      fontWeight: FontWeight.w800),
+                      fontWeight: FontWeight.w600),
                   side: BorderSide(
                       color: selected ? AppColors.primary : AppColors.border),
                 );
@@ -404,9 +404,9 @@ class _ShopScreenState extends State<ShopScreen> {
                 child: Text('Dealer sales code hai?',
                     style: TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
-                        fontFamily: 'Inter')),
+                        fontFamily: 'Poppins')),
               ),
               Switch(
                   value: _hasSalesCode,
@@ -446,13 +446,13 @@ class _ShopScreenState extends State<ShopScreen> {
                 style: TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
-                    fontFamily: 'Inter')),
+                    fontFamily: 'Poppins')),
             Text(_selectedProduct?.name ?? 'N/A',
                 style: const TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
-                    fontFamily: 'Inter')),
+                    fontFamily: 'Poppins')),
           ]),
           const SizedBox(height: 10),
           const Row(
@@ -462,28 +462,28 @@ class _ShopScreenState extends State<ShopScreen> {
                     style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary,
-                        fontFamily: 'Inter')),
+                        fontFamily: 'Poppins')),
                 Text('1 vehicle',
                     style: TextStyle(
                         fontSize: 13,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
-                        fontFamily: 'Inter')),
+                        fontFamily: 'Poppins')),
               ]),
           const Divider(height: 26),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             const Text('Total',
                 style: TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
-                    fontFamily: 'Inter')),
+                    fontFamily: 'Poppins')),
             Text('₹${total.toStringAsFixed(0)}',
                 style: const TextStyle(
                     fontSize: 26,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.primary,
-                    fontFamily: 'Inter')),
+                    fontFamily: 'Poppins')),
           ]),
         ],
       ),
@@ -504,9 +504,9 @@ class _ShopScreenState extends State<ShopScreen> {
         Text(label,
             style: const TextStyle(
                 fontSize: 13,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
-                fontFamily: 'Inter')),
+                fontFamily: 'Poppins')),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
@@ -514,13 +514,15 @@ class _ShopScreenState extends State<ShopScreen> {
           textCapitalization: textCapitalization,
           style: const TextStyle(
               fontSize: 14,
-              fontFamily: 'Inter',
+              fontFamily: 'Poppins',
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w600),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(
-                color: AppColors.textMuted, fontFamily: 'Inter', fontSize: 13),
+                color: AppColors.textMuted,
+                fontFamily: 'Poppins',
+                fontSize: 13),
             prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20),
             filled: true,
             fillColor: AppColors.bg,
@@ -542,4 +544,3 @@ class _ShopScreenState extends State<ShopScreen> {
     );
   }
 }
-

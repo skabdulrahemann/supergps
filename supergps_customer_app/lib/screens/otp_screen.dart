@@ -67,15 +67,15 @@ class _OtpScreenState extends State<OtpScreen> {
               const Text('Verify your account',
                   style: TextStyle(
                       fontSize: 28,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
-                      fontFamily: 'Inter')),
+                      fontFamily: 'Poppins')),
               const SizedBox(height: 8),
               Text('OTP ${widget.mobile} par bheja gaya hai.',
                   style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
-                      fontFamily: 'Inter')),
+                      fontFamily: 'Poppins')),
               const SizedBox(height: 28),
               TextField(
                 controller: _otpCtrl,
@@ -84,9 +84,9 @@ class _OtpScreenState extends State<OtpScreen> {
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                     fontSize: 30,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 8,
-                    fontFamily: 'Inter'),
+                    fontFamily: 'Poppins'),
                 decoration: InputDecoration(
                   counterText: '',
                   hintText: '000000',
@@ -128,7 +128,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                   child: const Text('Verify',
                       style: TextStyle(
-                          fontWeight: FontWeight.w800, fontFamily: 'Inter')),
+                          fontWeight: FontWeight.w600, fontFamily: 'Poppins')),
                 ),
               ),
             ],

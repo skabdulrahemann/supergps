@@ -84,8 +84,8 @@ class _HelpScreenState extends State<HelpScreen> {
         title: const Text('Help & Support',
             style: TextStyle(
                 color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-                fontFamily: 'Inter')),
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Poppins')),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -117,9 +117,9 @@ class _HelpScreenState extends State<HelpScreen> {
                       'Need Help?',
                       style: TextStyle(
                           fontSize: 22,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                           color: Colors.white,
-                          fontFamily: 'Inter'),
+                          fontFamily: 'Poppins'),
                     ),
                     const SizedBox(height: 6),
                     const Text(
@@ -128,7 +128,7 @@ class _HelpScreenState extends State<HelpScreen> {
                       style: TextStyle(
                           fontSize: 13,
                           color: Colors.white70,
-                          fontFamily: 'Inter',
+                          fontFamily: 'Poppins',
                           height: 1.5),
                     ),
                     const SizedBox(height: 20),
@@ -157,9 +157,9 @@ class _HelpScreenState extends State<HelpScreen> {
                               '7378666111',
                               style: TextStyle(
                                   fontSize: 18,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                   color: AppColors.primary,
-                                  fontFamily: 'Inter'),
+                                  fontFamily: 'Poppins'),
                             ),
                           ],
                         ),
@@ -171,7 +171,7 @@ class _HelpScreenState extends State<HelpScreen> {
                       style: TextStyle(
                           fontSize: 12,
                           color: Colors.white60,
-                          fontFamily: 'Inter'),
+                          fontFamily: 'Poppins'),
                     ),
                   ],
                 ),
@@ -180,9 +180,9 @@ class _HelpScreenState extends State<HelpScreen> {
               const Text('Frequently Asked Questions',
                   style: TextStyle(
                       fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
-                      fontFamily: 'Inter')),
+                      fontFamily: 'Poppins')),
               const SizedBox(height: 16),
               ...List.generate(_faqs.length, (i) {
                 final isExpanded = _expandedIndex == i;
@@ -205,7 +205,7 @@ class _HelpScreenState extends State<HelpScreen> {
                         color: isExpanded
                             ? AppColors.primary
                             : AppColors.textPrimary,
-                        fontFamily: 'Inter',
+                        fontFamily: 'Poppins',
                       ),
                     ),
                     trailing: AnimatedRotation(
@@ -227,7 +227,7 @@ class _HelpScreenState extends State<HelpScreen> {
                           style: const TextStyle(
                               fontSize: 13,
                               color: AppColors.textSecondary,
-                              fontFamily: 'Inter',
+                              fontFamily: 'Poppins',
                               height: 1.6),
                         ),
                       ),
@@ -243,4 +243,3 @@ class _HelpScreenState extends State<HelpScreen> {
     );
   }
 }
-

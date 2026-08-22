@@ -40,9 +40,9 @@ class ProfileScreen extends StatelessWidget {
                         : 'U',
                     style: const TextStyle(
                         fontSize: 40,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                         color: Colors.white,
-                        fontFamily: 'Inter'),
+                        fontFamily: 'Poppins'),
                   ),
                 ),
               ),
@@ -50,9 +50,9 @@ class ProfileScreen extends StatelessWidget {
               Text(user?.name ?? 'User',
                   style: const TextStyle(
                       fontSize: 22,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
-                      fontFamily: 'Inter')),
+                      fontFamily: 'Poppins')),
               const SizedBox(height: 6),
               Container(
                 padding:
@@ -63,9 +63,9 @@ class ProfileScreen extends StatelessWidget {
                 child: Text((user?.role ?? 'customer').toUpperCase(),
                     style: const TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.primary,
-                        fontFamily: 'Inter')),
+                        fontFamily: 'Poppins')),
               ),
               const SizedBox(height: 32),
               _InfoCard(
@@ -108,7 +108,7 @@ class ProfileScreen extends StatelessWidget {
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: AppColors.error,
-                          fontFamily: 'Inter')),
+                          fontFamily: 'Poppins')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.error.withValues(alpha: 0.08),
                     elevation: 0,
@@ -122,7 +122,7 @@ class ProfileScreen extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textMuted,
-                      fontFamily: 'Inter')),
+                      fontFamily: 'Poppins')),
             ],
           ),
         ),
@@ -170,14 +170,14 @@ class _InfoCard extends StatelessWidget {
                     style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
-                        fontFamily: 'Inter')),
+                        fontFamily: 'Poppins')),
                 const SizedBox(height: 2),
                 Text(value,
                     style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
-                        fontFamily: 'Inter')),
+                        fontFamily: 'Poppins')),
               ],
             ),
           ),
@@ -186,4 +186,3 @@ class _InfoCard extends StatelessWidget {
     );
   }
 }
-

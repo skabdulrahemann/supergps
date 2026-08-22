@@ -113,14 +113,14 @@ class _Header extends StatelessWidget {
               const Text(AppStrings.brandName,
                   style: TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 0.6)),
               const SizedBox(height: 2),
               Text(
                 'Good Morning, $firstName',
                 style: const TextStyle(
                     fontSize: 21,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -141,7 +141,7 @@ class _Header extends StatelessWidget {
           backgroundColor: AppColors.textPrimary,
           child: Text(firstName.characters.first.toUpperCase(),
               style: const TextStyle(
-                  color: AppColors.primary, fontWeight: FontWeight.w900)),
+                  color: AppColors.primary, fontWeight: FontWeight.w700)),
         ),
       ],
     );
@@ -252,7 +252,7 @@ class _HomeOptionCard extends StatelessWidget {
             action.label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 3),
           Text(
@@ -319,7 +319,7 @@ class CustomerServicesTab extends StatelessWidget {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
           title: const Text('Services',
-              style: TextStyle(fontWeight: FontWeight.w900))),
+              style: TextStyle(fontWeight: FontWeight.w700))),
       body: GridView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: services.length,
@@ -347,7 +347,7 @@ class CustomerServicesTab extends StatelessWidget {
                 const Spacer(),
                 Text(service.$1,
                     style: const TextStyle(
-                        fontWeight: FontWeight.w900, fontSize: 16)),
+                        fontWeight: FontWeight.w700, fontSize: 16)),
                 const SizedBox(height: 4),
                 Text(service.$2,
                     style: const TextStyle(
@@ -384,7 +384,7 @@ class CustomerAccountTab extends StatelessWidget {
       backgroundColor: AppColors.bg,
       appBar: AppBar(
           title: const Text('Account',
-              style: TextStyle(fontWeight: FontWeight.w900))),
+              style: TextStyle(fontWeight: FontWeight.w700))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -397,7 +397,7 @@ class CustomerAccountTab extends StatelessWidget {
                     child: Text(initial,
                         style: const TextStyle(
                             color: AppColors.primary,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                             fontSize: 20))),
                 const SizedBox(width: 14),
                 Expanded(
@@ -408,7 +408,7 @@ class CustomerAccountTab extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w900)),
+                              fontSize: 18, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 2),
                       Text(
                           user?.phone.isNotEmpty == true
@@ -445,7 +445,7 @@ class CustomerAccountTab extends StatelessWidget {
                       Expanded(
                           child: Text(item.$1,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.w800))),
+                                  fontWeight: FontWeight.w600))),
                       const Icon(Icons.chevron_right_rounded,
                           color: AppColors.textMuted),
                     ],

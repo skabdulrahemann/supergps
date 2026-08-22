@@ -70,7 +70,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   const Text(AppStrings.brandName,
                       style: TextStyle(
-                          fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                          fontWeight: FontWeight.w700, letterSpacing: 0.5)),
                   const Spacer(),
                   TextButton(onPressed: _openLogin, child: const Text('Skip')),
                 ],
@@ -183,7 +183,7 @@ class _OnboardPage extends StatelessWidget {
                           border: Border.all(color: AppColors.border)),
                       child: Text(c,
                           style: const TextStyle(
-                              fontSize: 11, fontWeight: FontWeight.w800)),
+                              fontSize: 11, fontWeight: FontWeight.w600)),
                     );
                   }).toList(),
                 ),
@@ -196,7 +196,7 @@ class _OnboardPage extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
                 fontSize: 29,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
                 height: 1.08)),
         const SizedBox(height: 12),

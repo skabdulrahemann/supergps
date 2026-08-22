@@ -30,7 +30,7 @@ class SpeedCard extends StatelessWidget {
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 30,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               height: 1,
             ),
           ),
@@ -39,7 +39,7 @@ class SpeedCard extends StatelessWidget {
             'km/h',
             style: TextStyle(
               color: AppColors.textSecondary,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

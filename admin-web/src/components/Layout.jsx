@@ -4,8 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import Modal from './Modal';
 import {
   LayoutDashboard, ShoppingCart, Users, Car, UserCheck,
-  Activity, LogOut, Menu, ChevronRight, Shield, Wrench, KeyRound, Loader2
+  Activity, LogOut, Menu, ChevronRight, Wrench, KeyRound, Loader2, Radio
 } from 'lucide-react';
+import logoUrl from '../assets/images/logo.png';
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -68,19 +69,19 @@ export default function Layout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-dark-50 flex">
+    <div className="min-h-screen flex bg-dark-50">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-dark-950 border-r border-dark-800 transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-72 transform border-r border-white/10 bg-gradient-to-b from-dark-950 via-dark-900 to-primary-950 text-white shadow-2xl shadow-dark-950/30 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 lg:static`}>
         <div className="h-full flex flex-col">
           {/* Logo */}
-          <div className="px-6 py-6 border-b border-dark-800">
+          <div className="px-6 py-6 border-b border-white/10">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/25">
-                <Shield className="w-5 h-5 text-dark-950" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-lg shadow-primary-950/25">
+                <img src={logoUrl} alt="SuperGPS" className="h-9 w-9 object-contain" />
               </div>
               <div>
-                <h1 className="text-white font-bold text-lg tracking-tight">SuperGPS</h1>
-                <p className="text-dark-500 text-xs">Admin Panel</p>
+                <h1 className="text-lg font-bold tracking-tight text-white">SuperGPS</h1>
+                <p className="text-xs font-medium text-cyan-100/70">Fleet Command</p>
               </div>
             </div>
           </div>
@@ -106,23 +107,23 @@ export default function Layout({ children }) {
           </nav>
 
           {/* User */}
-          <div className="px-4 py-4 border-t border-dark-800">
-            <div className="flex items-center gap-3 px-4 py-3 bg-dark-900 rounded-xl">
-              <div className="w-10 h-10 bg-primary-600/20 rounded-full flex items-center justify-center">
-                <span className="text-primary-400 font-bold text-sm">{user?.name?.charAt(0) || 'A'}</span>
+          <div className="px-4 py-4 border-t border-white/10">
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
+              <div className="w-10 h-10 bg-white text-primary-700 rounded-full flex items-center justify-center">
+                <span className="font-bold text-sm">{user?.name?.charAt(0) || 'A'}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-white text-sm font-medium truncate">{user?.name || 'Admin'}</p>
-                <p className="text-dark-500 text-xs truncate">{user?.email || 'admin@supergps.com'}</p>
+                <p className="text-cyan-100/60 text-xs truncate">{user?.email || 'admin@supergps.com'}</p>
               </div>
               <button
                 onClick={() => setPasswordModalOpen(true)}
-                className="p-2 text-dark-400 hover:text-primary-300 hover:bg-primary-500/10 rounded-lg transition-all"
+                className="p-2 text-cyan-100/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
                 title="Change password"
               >
                 <KeyRound className="w-4 h-4" />
               </button>
-              <button onClick={logout} className="p-2 text-dark-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all" title="Logout">
+              <button onClick={logout} className="p-2 text-cyan-100/70 hover:text-rose-200 hover:bg-rose-500/15 rounded-lg transition-all" title="Logout">
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
@@ -138,19 +139,19 @@ export default function Layout({ children }) {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-dark-100 px-6 py-4">
+        <header className="sticky top-0 z-30 border-b border-white bg-white/75 px-6 py-4 shadow-sm shadow-dark-200/50 backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 text-dark-600 hover:bg-dark-100 rounded-lg">
               <Menu className="w-5 h-5" />
             </button>
             <div className="hidden lg:block">
-              <h2 className="text-dark-800 font-semibold text-lg">
+              <h2 className="text-dark-900 font-semibold text-lg">
                 {navItems.find(n => n.path === location.pathname)?.label || 'Dashboard'}
               </h2>
             </div>
             <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-medium border border-emerald-200">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              <div className="hidden sm:flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
+                <Radio className="h-3.5 w-3.5" />
                 System Online
               </div>
             </div>
@@ -158,7 +159,7 @@ export default function Layout({ children }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto p-6">
           {children}
         </main>
       </div>

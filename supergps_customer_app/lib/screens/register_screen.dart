@@ -96,9 +96,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 'Create Account',
                 style: TextStyle(
                   fontSize: 32,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
-                  fontFamily: 'Inter',
+                  fontFamily: 'Poppins',
                 ),
               ),
               const SizedBox(height: 8),
@@ -107,7 +107,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 style: TextStyle(
                   fontSize: 15,
                   color: AppColors.textSecondary,
-                  fontFamily: 'Inter',
+                  fontFamily: 'Poppins',
                 ),
               ),
               const SizedBox(height: 28),
@@ -119,7 +119,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
+                    border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     children: [
@@ -132,7 +133,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           style: const TextStyle(
                               color: AppColors.error,
                               fontSize: 13,
-                              fontFamily: 'Inter'),
+                              fontFamily: 'Poppins'),
                         ),
                       ),
                     ],
@@ -183,7 +184,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary,
-                        fontFamily: 'Inter')),
+                        fontFamily: 'Poppins')),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -210,7 +211,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
-                              fontFamily: 'Inter'),
+                              fontFamily: 'Poppins'),
                         ),
                 ),
               ),
@@ -236,7 +237,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
-              fontFamily: 'Inter'),
+              fontFamily: 'Poppins'),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -244,11 +245,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
           obscureText: obscureText,
           keyboardType: keyboardType,
           style: const TextStyle(
-              fontSize: 15, fontFamily: 'Inter', color: AppColors.textPrimary),
+              fontSize: 15,
+              fontFamily: 'Poppins',
+              color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(
-                color: AppColors.textMuted, fontFamily: 'Inter', fontSize: 14),
+                color: AppColors.textMuted,
+                fontFamily: 'Poppins',
+                fontSize: 14),
             prefixIcon: Icon(icon, color: AppColors.textMuted, size: 22),
             suffixIcon: suffixIcon,
             filled: true,
@@ -271,4 +276,3 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
-
