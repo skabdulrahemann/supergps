@@ -13,8 +13,10 @@ class TrackingApiService {
         vehicle = Map<String, dynamic>.from(latest['vehicle'] as Map);
       }
       if (latest['position'] is Map) {
-        latestPosition = VehiclePosition.fromJson(
-            Map<String, dynamic>.from(latest['position'] as Map));
+        latestPosition = VehiclePosition.fromJson({
+          'position': Map<String, dynamic>.from(latest['position'] as Map),
+          if (vehicle != null) 'vehicle': vehicle,
+        });
       }
     }
 

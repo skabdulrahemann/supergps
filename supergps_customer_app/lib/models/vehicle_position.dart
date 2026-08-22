@@ -30,28 +30,57 @@ class VehiclePosition {
   LatLng get point => LatLng(latitude, longitude);
 
   factory VehiclePosition.fromJson(Map<String, dynamic> json) {
-    final lat = _toDouble(json['latitude'] ?? json['lat']);
-    final lng = _toDouble(json['longitude'] ?? json['lng']);
+    final position = json['position'] is Map
+        ? Map<String, dynamic>.from(json['position'] as Map)
+        : json;
+    final vehicle = json['vehicle'] is Map
+        ? Map<String, dynamic>.from(json['vehicle'] as Map)
+        : const <String, dynamic>{};
+    final raw = position['raw'] is Map
+        ? Map<String, dynamic>.from(position['raw'] as Map)
+        : const <String, dynamic>{};
+    final rawIo = raw['io'] is Map
+        ? Map<String, dynamic>.from(raw['io'] as Map)
+        : const <String, dynamic>{};
+    final rawElements = rawIo['elements'] is Map
+        ? Map<String, dynamic>.from(rawIo['elements'] as Map)
+        : const <String, dynamic>{};
+
+    final lat = _toDouble(position['latitude'] ?? position['lat']);
+    final lng = _toDouble(position['longitude'] ?? position['lng']);
+    final ignitionValue = position['ignition'] ??
+        position['lastIgnition'] ??
+        vehicle['lastIgnition'] ??
+        raw['ignition'] ??
+        rawIo['ignition'] ??
+        rawElements['239'];
 
     return VehiclePosition(
-      id: json['id']?.toString(),
-      vehicleId: (json['vehicleId'] ?? '').toString(),
+      id: position['id']?.toString(),
+      vehicleId: (position['vehicleId'] ?? json['vehicleId'] ?? '').toString(),
       latitude: lat ?? 0,
       longitude: lng ?? 0,
-      speedKmh: _toDouble(
-              json['speedKmh'] ?? json['speed'] ?? json['lastSpeedKmh']) ??
+      speedKmh: _toDouble(position['speedKmh'] ??
+              position['speed'] ??
+              vehicle['lastSpeedKmh']) ??
           0,
       heading: _normalizeHeading(
-        _toDouble(json['course'] ?? json['heading'] ?? json['lastCourse']) ?? 0,
+        _toDouble(position['course'] ??
+                position['heading'] ??
+                vehicle['lastCourse']) ??
+            0,
       ),
-      ignition: _toBool(json['ignition'] ?? json['lastIgnition']),
-      gpsValid:
-          json['gpsValid'] == null ? true : _toBool(json['gpsValid']) == true,
-      satellites: _toInt(json['satellites'] ?? json['lastSatellites']),
-      deviceTime: _toDate(
-          json['deviceTimestamp'] ?? json['timestamp'] ?? json['deviceTime']),
-      receivedAt: _toDate(
-          json['receivedAt'] ?? json['serverTime'] ?? json['createdAt']),
+      ignition: _toBool(ignitionValue),
+      gpsValid: position['gpsValid'] == null
+          ? true
+          : _toBool(position['gpsValid']) == true,
+      satellites: _toInt(position['satellites'] ?? vehicle['lastSatellites']),
+      deviceTime: _toDate(position['deviceTimestamp'] ??
+          position['timestamp'] ??
+          position['deviceTime']),
+      receivedAt: _toDate(position['receivedAt'] ??
+          position['serverTime'] ??
+          position['createdAt']),
     );
   }
 

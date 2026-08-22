@@ -88,8 +88,12 @@ class TrackingSocketService {
     if (rawPosition is! Map) return;
 
     final position = VehiclePosition.fromJson(
-      Map<String, dynamic>.from(rawPosition)
-        ..putIfAbsent('vehicleId', () => vehicleId),
+      {
+        'position': Map<String, dynamic>.from(rawPosition)
+          ..putIfAbsent('vehicleId', () => vehicleId),
+        if (data['vehicle'] is Map)
+          'vehicle': Map<String, dynamic>.from(data['vehicle'] as Map),
+      },
     );
     _positionController.add(position);
   }

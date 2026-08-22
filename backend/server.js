@@ -8,27 +8,26 @@ const { initTrackingSocket } = require('./sockets/trackingSocket');
 
 const PORT = process.env.PORT || 5000;
 const TRACKING_PORT = Number(process.env.TRACKING_PORT || 7077);
+const TELTONIKA_TRACKING_PORT = process.env.TELTONIKA_TRACKING_PORT
+  ? Number(process.env.TELTONIKA_TRACKING_PORT)
+  : null;
 const TRACKING_ENABLED = process.env.TRACKING_ENABLED !== 'false';
 
-const startTrackingServer = () => {
-  if (!TRACKING_ENABLED) {
-    console.log('Tracking TCP server disabled.');
-    return null;
-  }
-
+const startTrackingListener = ({ port, label, allowedProtocols }) => {
   const trackingServer = createTrackingServer({
     isImeiAuthorized,
     onPositions: savePositionsForImei,
+    allowedProtocols,
     logger: console,
   });
 
-  trackingServer.listen(TRACKING_PORT, () => {
-    console.log(`Tracking TCP server running on port ${TRACKING_PORT}`);
+  trackingServer.listen(port, () => {
+    console.log(`${label} TCP server running on port ${port}`);
   });
 
   trackingServer.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.error(`Tracking port ${TRACKING_PORT} is already in use. Stop the existing tracking server or set TRACKING_PORT in .env.`);
+      console.error(`${label} port ${port} is already in use. Stop the existing tracking server or set a different port in .env.`);
       process.exit(1);
     }
 
@@ -36,6 +35,33 @@ const startTrackingServer = () => {
   });
 
   return trackingServer;
+};
+
+const startTrackingServer = () => {
+  if (!TRACKING_ENABLED) {
+    console.log('Tracking TCP server disabled.');
+    return [];
+  }
+
+  const servers = [
+    startTrackingListener({
+      port: TRACKING_PORT,
+      label: 'Tracking',
+      allowedProtocols: ['maharashtra', 'gt06', 'teltonika'],
+    }),
+  ];
+
+  if (TELTONIKA_TRACKING_PORT && TELTONIKA_TRACKING_PORT !== TRACKING_PORT) {
+    servers.push(
+      startTrackingListener({
+        port: TELTONIKA_TRACKING_PORT,
+        label: 'Teltonika tracking',
+        allowedProtocols: ['teltonika'],
+      }),
+    );
+  }
+
+  return servers;
 };
 
 const startServer = async () => {

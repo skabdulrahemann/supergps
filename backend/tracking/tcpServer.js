@@ -43,6 +43,7 @@ const RAW_LOGGING = process.env.TRACKING_RAW_LOGGING === "true";
  * @param {(imei: string, records: object[]) => void|Promise<void>} [options.onPositions] - called with decoded GPS records for a device.
  * @param {(imei: string, remoteAddr: string) => void} [options.onDeviceConnected]
  * @param {(imei: string, remoteAddr: string) => void} [options.onDeviceDisconnected]
+ * @param {string[]} [options.allowedProtocols]
  * @param {Console} [options.logger]
  * @returns {net.Server} an unstarted net.Server - call .listen(port) yourself
  */
@@ -51,8 +52,10 @@ function createTrackingServer({
   onPositions,
   onDeviceConnected,
   onDeviceDisconnected,
+  allowedProtocols = ["maharashtra", "gt06", "teltonika"],
   logger = console,
 } = {}) {
+  const protocolSet = new Set(allowedProtocols);
   const server = net.createServer((socket) => {
     let buffer = Buffer.alloc(0);
     let imei = null;
@@ -79,7 +82,7 @@ function createTrackingServer({
         // eslint-disable-next-line no-constant-condition
         while (true) {
           if (buffer.length === 0) break;
-          if (!protocol) protocol = detectProtocol(buffer);
+          if (!protocol) protocol = detectProtocol(buffer, protocolSet);
           if (!protocol) break;
 
           if (protocol === "maharashtra") {
@@ -251,11 +254,15 @@ function writePacket(socket, packet, logger, label) {
   socket.write(packet);
 }
 
-function detectProtocol(buffer) {
+function detectProtocol(buffer, allowedProtocols) {
   if (buffer.length === 0) return null;
-  if (looksLikeMaharashtraPacket(buffer)) return "maharashtra";
-  if (looksLikeGt06Packet(buffer)) return "gt06";
-  return "teltonika";
+  if (looksLikeMaharashtraPacket(buffer)) {
+    return allowedProtocols.has("maharashtra") ? "maharashtra" : null;
+  }
+  if (looksLikeGt06Packet(buffer)) {
+    return allowedProtocols.has("gt06") ? "gt06" : null;
+  }
+  return allowedProtocols.has("teltonika") ? "teltonika" : null;
 }
 
 async function authorizeDevice(

@@ -38,6 +38,10 @@ function startServer(handlers) {
   });
 }
 
+function closeServer(server) {
+  return new Promise((resolve) => server.close(resolve));
+}
+
 function connect(port) {
   return new Promise((resolve, reject) => {
     const socket = net.createConnection({ host: "127.0.0.1", port }, () =>
@@ -122,7 +126,7 @@ async function testAcceptedDeviceFlow() {
   );
 
   socket.end();
-  server.close();
+  await closeServer(server);
 }
 
 async function testUnknownDeviceRejected() {
@@ -147,7 +151,7 @@ async function testUnknownDeviceRejected() {
   await new Promise((resolve) => socket.on("close", resolve));
   console.log("✓ Connection closed after rejection");
 
-  server.close();
+  await closeServer(server);
 }
 
 async function testChunkedTcpStream() {
@@ -185,7 +189,100 @@ async function testChunkedTcpStream() {
   );
 
   socket.end();
-  server.close();
+  await closeServer(server);
+}
+
+async function testTeltonikaMultipleRecordsAndPackets() {
+  const receivedPositions = [];
+  const server = await startServer({
+    isImeiAuthorized: () => true,
+    onPositions: (imei, records) => {
+      receivedPositions.push({ imei, records });
+    },
+  });
+  const port = server.address().port;
+  const socket = await connect(port);
+
+  socket.write(buildImeiHandshakeFrame(KNOWN_IMEI));
+  await waitForBytes(socket, 1);
+
+  const multiRecordPacket = buildTeltonikaPacket({
+    records: [
+      { lat: 19.1, lng: 77.1, speed: 11, ignition: true },
+      { lat: 19.2, lng: 77.2, speed: 22, ignition: false },
+    ],
+  });
+  const packet2 = buildTeltonikaPacket({
+    lat: 19.3,
+    lng: 77.3,
+    speed: 33,
+    ignition: true,
+  });
+  socket.write(Buffer.concat([multiRecordPacket, packet2]));
+
+  const acks = await waitForBytes(socket, 8);
+  assert.strictEqual(acks.readUInt32BE(0), 2);
+  assert.strictEqual(acks.readUInt32BE(4), 1);
+  await new Promise((r) => setTimeout(r, 50));
+  assert.strictEqual(receivedPositions.length, 2);
+  assert.strictEqual(receivedPositions[0].records.length, 2);
+  assert.strictEqual(receivedPositions[1].records.length, 1);
+  assert.strictEqual(receivedPositions[0].records[1].speedKmh, 22);
+  console.log("PASS Teltonika multiple AVL records and multiple packets in one chunk");
+
+  socket.end();
+  await closeServer(server);
+}
+
+async function testTeltonikaReconnect() {
+  const connected = [];
+  const disconnected = [];
+  const server = await startServer({
+    isImeiAuthorized: () => true,
+    onDeviceConnected: (imei) => connected.push(imei),
+    onDeviceDisconnected: (imei) => disconnected.push(imei),
+    onPositions: () => {},
+  });
+  const port = server.address().port;
+
+  for (let i = 0; i < 2; i++) {
+    const socket = await connect(port);
+    socket.write(buildImeiHandshakeFrame(KNOWN_IMEI));
+    const accept = await waitForBytes(socket, 1);
+    assert.strictEqual(accept[0], 0x01);
+    socket.end();
+    await new Promise((resolve) => socket.on("close", resolve));
+  }
+
+  assert.deepStrictEqual(connected, [KNOWN_IMEI, KNOWN_IMEI]);
+  assert.strictEqual(disconnected.length, 2);
+  console.log("PASS Teltonika reconnect/session handling");
+
+  await closeServer(server);
+}
+
+async function testTeltonikaOnlyListener() {
+  const receivedPositions = [];
+  const server = await startServer({
+    allowedProtocols: ["teltonika"],
+    isImeiAuthorized: () => true,
+    onPositions: (imei, records) => receivedPositions.push({ imei, records }),
+  });
+  const port = server.address().port;
+  const socket = await connect(port);
+
+  socket.write(buildImeiHandshakeFrame(KNOWN_IMEI));
+  const accept = await waitForBytes(socket, 1);
+  assert.strictEqual(accept[0], 0x01);
+  socket.write(buildTeltonikaPacket({ lat: 21, lng: 78, speed: 12 }));
+  const ack = await waitForBytes(socket, 4);
+  assert.strictEqual(ack.readUInt32BE(0), 1);
+  await new Promise((r) => setTimeout(r, 50));
+  assert.strictEqual(receivedPositions.length, 1);
+  console.log("PASS configurable Teltonika-only listener");
+
+  socket.end();
+  await closeServer(server);
 }
 
 async function testMaharashtraPacketFlow() {
@@ -245,7 +342,7 @@ async function testMaharashtraPacketFlow() {
   console.log("OK Maharashtra NMP packet accepted over TCP");
 
   socket.end();
-  server.close();
+  await closeServer(server);
 }
 
 async function testGt06PacketFlow() {
@@ -284,7 +381,7 @@ async function testGt06PacketFlow() {
   console.log("OK GT06 location packet accepted over TCP");
 
   socket.end();
-  server.close();
+  await closeServer(server);
 }
 
 async function testGt06FragmentedAndMultiplePackets() {
@@ -329,13 +426,16 @@ async function testGt06FragmentedAndMultiplePackets() {
   console.log("PASS GT06 multiple TCP packets in one chunk");
 
   socket.end();
-  server.close();
+  await closeServer(server);
 }
 
 async function run() {
   await testAcceptedDeviceFlow();
   await testUnknownDeviceRejected();
   await testChunkedTcpStream();
+  await testTeltonikaMultipleRecordsAndPackets();
+  await testTeltonikaReconnect();
+  await testTeltonikaOnlyListener();
   await testMaharashtraPacketFlow();
   await testGt06PacketFlow();
   await testGt06FragmentedAndMultiplePackets();

@@ -1,103 +1,151 @@
-/**
- * Self-contained regression test for tracking/teltonikaCodec.js.
- * No test framework needed — run directly with: node tracking/teltonikaCodec.test.js
- *
- * It builds synthetic Codec8 packets (encoding known values by hand, the way
- * a real Teltonika device would) and verifies the parser decodes them back
- * to the same values. This lets us trust the parser BEFORE wiring it to a
- * real TCP connection or a real device in later steps.
- */
-const assert = require('assert');
-const { decodeImeiHandshake, decodeAvlPacket, crc16ibm, encodeAck } = require('./teltonikaCodec');
+const assert = require("assert");
+const {
+  decodeImeiHandshake,
+  decodeAvlPacket,
+  encodeAck,
+  CODEC8,
+  CODEC8_EXT,
+  CODEC16,
+} = require("./teltonikaCodec");
+const { buildImeiHandshakeFrame, buildTeltonikaPacket } = require("./testHelpers");
 
-function buildTestPacket({ lat, lng, alt, angle, sats, speed, ignition, timestampMs }) {
-  const record = Buffer.concat([
-    (() => { const b = Buffer.alloc(8); b.writeBigUInt64BE(BigInt(timestampMs)); return b; })(),
-    Buffer.from([1]), // priority
-    (() => { const b = Buffer.alloc(4); b.writeInt32BE(Math.round(lng * 10000000)); return b; })(),
-    (() => { const b = Buffer.alloc(4); b.writeInt32BE(Math.round(lat * 10000000)); return b; })(),
-    (() => { const b = Buffer.alloc(2); b.writeInt16BE(alt); return b; })(),
-    (() => { const b = Buffer.alloc(2); b.writeUInt16BE(angle); return b; })(),
-    Buffer.from([sats]),
-    (() => { const b = Buffer.alloc(2); b.writeUInt16BE(speed); return b; })(),
-    Buffer.from([239]),                    // event IO ID = ignition
-    Buffer.from([1]),                      // total IO count
-    Buffer.from([1]),                      // N1 (1-byte IO count)
-    Buffer.from([239, ignition ? 1 : 0]),  // id=239, value
-    Buffer.from([0]),                      // N2
-    Buffer.from([0]),                      // N4
-    Buffer.from([0]),                      // N8
-  ]);
-
-  const dataField = Buffer.concat([
-    Buffer.from([0x08]), // codec ID = Codec8
-    Buffer.from([1]),    // NOD1 = 1 record
-    record,
-    Buffer.from([1]),    // NOD2 = 1 record
-  ]);
-
-  const crc = crc16ibm(dataField);
-  const crcBuf = Buffer.alloc(4);
-  crcBuf.writeUInt32BE(crc, 0);
-
-  const lengthBuf = Buffer.alloc(4);
-  lengthBuf.writeUInt32BE(dataField.length, 0);
-
-  return Buffer.concat([Buffer.alloc(4), lengthBuf, dataField, crcBuf]); // Buffer.alloc(4) = zero preamble
+function assertBaseGps(record) {
+  assert.ok(Math.abs(record.latitude - 19.1383) < 0.0000001);
+  assert.ok(Math.abs(record.longitude - 77.321) < 0.0000001);
+  assert.strictEqual(record.altitude, 450);
+  assert.strictEqual(record.course, 180);
+  assert.strictEqual(record.satellites, 9);
+  assert.strictEqual(record.speedKmh, 42);
 }
 
 function run() {
-  // Test 1: IMEI handshake
-  const imeiFrame = Buffer.concat([
-    (() => { const b = Buffer.alloc(2); b.writeUInt16BE(15); return b; })(),
-    Buffer.from('864636050000001', 'ascii'),
-  ]);
-  const handshake = decodeImeiHandshake(imeiFrame);
-  assert.strictEqual(handshake.imei, '864636050000001');
-  assert.strictEqual(handshake.bytesConsumed, imeiFrame.length);
-  console.log('✓ IMEI handshake decodes correctly');
-
-  // Test 2: AVL packet with known values round-trips correctly
   const ts = Date.now();
-  const packet = buildTestPacket({ lat: 19.1383, lng: 77.3210, alt: 450, angle: 180, sats: 9, speed: 42, ignition: true, timestampMs: ts });
-  const decoded = decodeAvlPacket(packet);
-  assert.ok(decoded, 'decoded packet should not be null');
-  assert.strictEqual(decoded.crcOk, true);
-  assert.strictEqual(decoded.records.length, 1);
+  const imeiFrame = buildImeiHandshakeFrame("864636050000001");
+  const handshake = decodeImeiHandshake(imeiFrame);
+  assert.strictEqual(handshake.imei, "864636050000001");
+  assert.strictEqual(handshake.bytesConsumed, imeiFrame.length);
+  console.log("PASS Teltonika IMEI handshake");
 
-  const r = decoded.records[0];
-  assert.ok(Math.abs(r.latitude - 19.1383) < 0.0000001);
-  assert.ok(Math.abs(r.longitude - 77.3210) < 0.0000001);
-  assert.strictEqual(r.altitude, 450);
-  assert.strictEqual(r.course, 180);
-  assert.strictEqual(r.satellites, 9);
-  assert.strictEqual(r.speedKmh, 42);
-  assert.strictEqual(r.ignition, true);
-  assert.strictEqual(r.timestamp.getTime(), ts);
-  assert.strictEqual(decoded.bytesConsumed, packet.length);
-  console.log('✓ AVL packet decodes to the exact values it was encoded with');
+  const codec8 = buildTeltonikaPacket({
+    codecId: CODEC8,
+    lat: 19.1383,
+    lng: 77.321,
+    alt: 450,
+    angle: 180,
+    sats: 9,
+    speed: 42,
+    ignition: true,
+    movement: true,
+    timestampMs: ts,
+    io: {
+      21: 4,
+      66: { value: 12500, size: 2 },
+      67: { value: 3890, size: 2 },
+      16: { value: 1234567, size: 4 },
+      99: { value: 7, size: 1 },
+    },
+  });
+  const decoded8 = decodeAvlPacket(codec8);
+  assert.strictEqual(decoded8.codecId, CODEC8);
+  assert.strictEqual(decoded8.crcOk, true);
+  assert.strictEqual(decoded8.records.length, 1);
+  assertBaseGps(decoded8.records[0]);
+  assert.strictEqual(decoded8.records[0].ignition, true);
+  assert.strictEqual(decoded8.records[0].movement, true);
+  assert.strictEqual(decoded8.records[0].io.gsmSignal, 4);
+  assert.strictEqual(decoded8.records[0].io.externalVoltage, 12.5);
+  assert.strictEqual(decoded8.records[0].io.batteryVoltage, 3.89);
+  assert.strictEqual(decoded8.records[0].io.odometerKm, 1234.567);
+  assert.strictEqual(decoded8.records[0].io.elements[99], 7);
+  console.log("PASS Codec8 GPS, IO mapping, and unknown IO retention");
 
-  // Test 3: partial buffer returns null (waiting for more bytes), never throws
-  const partial = packet.subarray(0, 10);
-  assert.strictEqual(decodeAvlPacket(partial), null);
-  console.log('✓ Partial/incomplete buffer handled without throwing');
+  const codec8Extended = buildTeltonikaPacket({
+    codecId: CODEC8_EXT,
+    lat: 19.1383,
+    lng: 77.321,
+    alt: 450,
+    angle: 180,
+    sats: 9,
+    speed: 42,
+    ignition: false,
+    timestampMs: ts,
+    io: {
+      113: 87,
+      199: { value: 543210, size: 4 },
+      300: { value: "deadbeef", size: 4, variable: true },
+    },
+  });
+  const decoded8Extended = decodeAvlPacket(codec8Extended);
+  assert.strictEqual(decoded8Extended.codecId, CODEC8_EXT);
+  assert.strictEqual(decoded8Extended.extended, true);
+  assert.strictEqual(decoded8Extended.records[0].ignition, false);
+  assert.strictEqual(decoded8Extended.records[0].io.batteryPercent, 87);
+  assert.strictEqual(decoded8Extended.records[0].io.tripOdometerKm, 543.21);
+  assert.strictEqual(decoded8Extended.records[0].io.elements[300], "deadbeef");
+  assert.strictEqual(decoded8Extended.records[0].io.elementMeta[300].encoding, "hex");
+  console.log("PASS Codec8 Extended including variable IO");
 
-  // Test 4: ignition OFF decodes correctly
-  const packetOff = buildTestPacket({ lat: 19.0, lng: 77.0, alt: 100, angle: 0, sats: 5, speed: 0, ignition: false, timestampMs: ts });
-  assert.strictEqual(decodeAvlPacket(packetOff).records[0].ignition, false);
-  console.log('✓ Ignition OFF decodes correctly');
+  const codec16 = buildTeltonikaPacket({
+    codecId: CODEC16,
+    lat: 19.1383,
+    lng: 77.321,
+    alt: 450,
+    angle: 180,
+    sats: 9,
+    speed: 42,
+    ignition: true,
+    eventIoId: 239,
+    generationType: 2,
+    timestampMs: ts,
+    io: {
+      66: { value: 12450, size: 2 },
+      240: 1,
+    },
+  });
+  const decoded16 = decodeAvlPacket(codec16);
+  assert.strictEqual(decoded16.codecId, CODEC16);
+  assert.strictEqual(decoded16.codec16, true);
+  assert.strictEqual(decoded16.records[0].generationType, 2);
+  assert.strictEqual(decoded16.records[0].eventIoId, 239);
+  assert.strictEqual(decoded16.records[0].io.externalVoltage, 12.45);
+  assert.strictEqual(decoded16.records[0].movement, true);
+  console.log("PASS Codec16 event IO and generation type");
 
-  // Test 5: corrupted CRC is flagged, not silently accepted
-  const corrupted = Buffer.from(packet);
+  const multi = buildTeltonikaPacket({
+    codecId: CODEC8,
+    records: [
+      {
+        lat: 19.1,
+        lng: 77.1,
+        speed: 10,
+        ignition: true,
+        timestampMs: ts,
+      },
+      {
+        lat: 19.2,
+        lng: 77.2,
+        speed: 20,
+        ignition: false,
+        timestampMs: ts + 1000,
+      },
+    ],
+  });
+  const decodedMulti = decodeAvlPacket(multi);
+  assert.strictEqual(decodedMulti.records.length, 2);
+  assert.strictEqual(decodedMulti.records[1].speedKmh, 20);
+  assert.strictEqual(encodeAck(decodedMulti.records.length).readUInt32BE(0), 2);
+  console.log("PASS multiple AVL records and ACK count");
+
+  assert.strictEqual(decodeAvlPacket(codec8.subarray(0, 10)), null);
+  console.log("PASS partial AVL buffer waits for more data");
+
+  const corrupted = Buffer.from(codec8);
   corrupted[corrupted.length - 1] ^= 0xff;
   assert.strictEqual(decodeAvlPacket(corrupted).crcOk, false);
-  console.log('✓ Corrupted CRC is detected');
+  assert.strictEqual(encodeAck(0).readUInt32BE(0), 0);
+  console.log("PASS CRC fail detection and reject ACK value");
 
-  // Test 6: ACK encoding
-  assert.strictEqual(encodeAck(1).readUInt32BE(0), 1);
-  console.log('✓ ACK encodes record count correctly');
-
-  console.log('\nALL TELTONIKA CODEC TESTS PASSED ✅');
+  console.log("\nALL TELTONIKA CODEC TESTS PASSED");
 }
 
 run();

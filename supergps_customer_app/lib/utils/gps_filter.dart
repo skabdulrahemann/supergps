@@ -4,7 +4,8 @@ import 'distance_utils.dart';
 
 class GpsFilter {
   static const double minRoutePointMeters = 4;
-  static const double maxPlausibleKmhWithoutProof = 260;
+  static const double maxPlausibleKmhWithoutProof = 180;
+  static const double maxStationaryJumpMeters = 300;
 
   static bool isValidCoordinate(double latitude, double longitude) {
     return latitude.isFinite &&
@@ -31,6 +32,9 @@ class GpsFilter {
 
     final distanceMeters = metersBetween(previous.point, next.point);
     if (distanceMeters < minRoutePointMeters) return false;
+    if (next.speedKmh <= 5 && distanceMeters > maxStationaryJumpMeters) {
+      return false;
+    }
 
     final fromTime = previous.deviceTime ?? previous.receivedAt;
     final toTime = next.deviceTime ?? next.receivedAt;

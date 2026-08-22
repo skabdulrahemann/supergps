@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -21,6 +22,7 @@ import 'shop_screen.dart';
 
 const _noVehicleTitle = 'Select a vehicle';
 const _defaultMapCenter = LatLng(20.5937, 78.9629);
+const _routeBlue = Color(0xFF2563EB);
 
 class LiveTrackingScreen extends StatefulWidget {
   final String vehicleNumber;
@@ -101,7 +103,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
         _heading = initialPosition?.heading ?? 0;
         _loading = false;
       });
-      _centerOnVehicle(zoom: 16, onlyOnce: true);
+      _centerOnVehicle(zoom: 17, onlyOnce: true);
       _connectSocket(vehicleId);
     } catch (err) {
       if (!mounted) return;
@@ -281,7 +283,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
                       initialZoom: hasPosition ? 16 : 5,
                       onMapReady: () {
                         _mapReady = true;
-                        _centerOnVehicle(zoom: 16, onlyOnce: true);
+                        _centerOnVehicle(zoom: 17, onlyOnce: true);
                       },
                       interactionOptions: const InteractionOptions(
                         flags: InteractiveFlag.drag |
@@ -300,9 +302,8 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
                           polylines: [
                             Polyline(
                               points: routePoints,
-                              color:
-                                  AppColors.textPrimary.withValues(alpha: 0.30),
-                              strokeWidth: 8,
+                              color: _routeBlue.withValues(alpha: 0.18),
+                              strokeWidth: 9,
                             ),
                           ],
                         ),
@@ -310,11 +311,12 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
                           polylines: [
                             Polyline(
                               points: routePoints,
-                              color: AppColors.primary,
+                              color: _routeBlue,
                               strokeWidth: 5,
                             ),
                           ],
                         ),
+                        MarkerLayer(markers: _directionMarkers(routePoints)),
                       ],
                       if (hasPosition)
                         MarkerLayer(
@@ -354,7 +356,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
                 const SizedBox(height: 10),
                 _MapButton(
                   icon: Icons.my_location_rounded,
-                  onTap: () => _centerOnVehicle(zoom: 16),
+                  onTap: () => _centerOnVehicle(zoom: 17),
                 ),
                 const SizedBox(height: 10),
                 _MapButton(icon: Icons.open_in_new_rounded, onTap: _openMaps),
@@ -397,6 +399,44 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
   void _zoomOut() {
     final camera = _mapController.camera;
     _mapController.move(camera.center, camera.zoom - 1);
+  }
+
+  List<Marker> _directionMarkers(List<LatLng> points) {
+    if (points.length < 2) return const [];
+    final step = math.max(1, (points.length / 18).ceil());
+    final markers = <Marker>[];
+    for (var i = step; i < points.length; i += step) {
+      final previous = points[i - 1];
+      final current = points[i];
+      if (metersBetween(previous, current) < 12) continue;
+      markers.add(
+        Marker(
+          point: current,
+          width: 22,
+          height: 22,
+          alignment: Alignment.center,
+          child: Transform.rotate(
+            angle: _bearingRadians(previous, current),
+            child: Icon(
+              Icons.navigation_rounded,
+              size: 20,
+              color: _routeBlue.withValues(alpha: 0.92),
+            ),
+          ),
+        ),
+      );
+    }
+    return markers;
+  }
+
+  double _bearingRadians(LatLng from, LatLng to) {
+    final lat1 = from.latitude * math.pi / 180;
+    final lat2 = to.latitude * math.pi / 180;
+    final dLon = (to.longitude - from.longitude) * math.pi / 180;
+    final y = math.sin(dLon) * math.cos(lat2);
+    final x = math.cos(lat1) * math.sin(lat2) -
+        math.sin(lat1) * math.cos(lat2) * math.cos(dLon);
+    return math.atan2(y, x);
   }
 
   String _vehicleStatus() {

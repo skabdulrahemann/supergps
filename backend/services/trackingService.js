@@ -134,7 +134,11 @@ async function savePositionsForImei(imeiNumber, records) {
     ignition: record.ignition ?? null,
     deviceTimestamp: record.timestamp || new Date(),
     raw: sanitizeRawValue({
+      protocolCodec: record.codecId,
       priority: record.priority,
+      eventIoId: record.eventIoId,
+      generationType: record.generationType,
+      movement: record.movement,
       io: record.io || {},
     }),
   }));

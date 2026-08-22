@@ -20,43 +20,25 @@ class VehicleMarker extends StatelessWidget {
     return Stack(
       alignment: Alignment.center,
       children: [
-        Container(
-          width: 64,
-          height: 64,
+        DecoratedBox(
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: halo.withValues(alpha: 0.12),
             boxShadow: [
               BoxShadow(
-                color: halo.withValues(alpha: 0.18),
-                blurRadius: 20,
-                spreadRadius: 5,
+                color: halo.withValues(alpha: 0.20),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
+          child: const SizedBox(width: 46, height: 46),
         ),
         Transform.rotate(
           angle: heading * math.pi / 180,
-          child: Container(
+          child: Image.asset(
+            _assetForVehicle(vehicleType),
             width: 52,
             height: 52,
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 3),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.22),
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child:
-                  Image.asset(_assetForVehicle(vehicleType), fit: BoxFit.cover),
-            ),
+            fit: BoxFit.contain,
           ),
         ),
       ],
