@@ -3,9 +3,9 @@ import api from '../utils/api';
 import Modal from '../components/Modal';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CreatedCredentials from '../components/CreatedCredentials';
-import { Search, Phone, ShoppingCart, Car, User, UserPlus, Trash2 } from 'lucide-react';
+import { Search, Phone, ShoppingCart, Car, User, UserPlus, Trash2, Pencil } from 'lucide-react';
 
-const emptyForm = { name: '', email: '', phone: '', password: '' };
+const emptyForm = { name: '', email: '', phone: '', password: '', isActive: true };
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
@@ -14,6 +14,7 @@ export default function Customers() {
   const [loading, setLoading] = useState(true);
 
   const [showCreate, setShowCreate] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -60,6 +61,17 @@ export default function Customers() {
   }, [search, customers]);
 
   const openCreate = () => { setForm(emptyForm); setError(''); setCredentials(null); setShowCreate(true); };
+  const openEdit = (customer) => {
+    setEditTarget(customer);
+    setError('');
+    setForm({
+      name: customer.name || '',
+      email: customer.email || '',
+      phone: customer.phone || '',
+      password: '',
+      isActive: customer.isActive !== false,
+    });
+  };
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -71,6 +83,24 @@ export default function Customers() {
       fetchCustomers();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create customer');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!editTarget) return;
+    setSaving(true);
+    setError('');
+    try {
+      const payload = { ...form };
+      if (!payload.password) delete payload.password;
+      await api.put(`/users/${editTarget.id}`, payload);
+      setEditTarget(null);
+      fetchCustomers();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update customer');
     } finally {
       setSaving(false);
     }
@@ -171,6 +201,13 @@ export default function Customers() {
                     <td className="table-cell text-dark-400">{new Date(c.createdAt).toLocaleDateString()}</td>
                     <td className="table-cell text-right">
                       <button
+                        onClick={() => openEdit(c)}
+                        className="mr-1 p-2 text-dark-400 hover:text-sky-700 hover:bg-sky-50 rounded-lg transition-colors"
+                        title="Edit customer"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => setDeleteTarget(c)}
                         className="p-2 text-dark-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                         title="Delete customer"
@@ -219,6 +256,35 @@ export default function Customers() {
             </button>
           </form>
         )}
+      </Modal>
+
+      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="Edit Customer" subtitle={editTarget?.email || ''}>
+        <form onSubmit={handleUpdate} className="space-y-4">
+          {error && <div className="bg-rose-50 text-rose-700 text-sm px-4 py-3 rounded-xl border border-rose-200">{error}</div>}
+          <div>
+            <label className="text-sm font-medium text-dark-700 mb-1.5 block">Full Name</label>
+            <input required className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-dark-700 mb-1.5 block">Email</label>
+            <input required type="email" className="input-field" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-dark-700 mb-1.5 block">Phone</label>
+            <input required className="input-field" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-dark-700 mb-1.5 block">New Password <span className="text-dark-400 font-normal">(optional)</span></label>
+            <input type="text" className="input-field" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Leave blank to keep existing" />
+          </div>
+          <label className="flex items-center gap-3 rounded-xl border border-dark-200 bg-dark-50 px-4 py-3 text-sm font-semibold text-dark-700">
+            <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4 rounded border-dark-300 text-primary-500 focus:ring-primary-500" />
+            Active customer
+          </label>
+          <button type="submit" disabled={saving} className="btn-primary w-full">
+            {saving ? 'Saving...' : 'Save Customer'}
+          </button>
+        </form>
       </Modal>
 
       <ConfirmDialog

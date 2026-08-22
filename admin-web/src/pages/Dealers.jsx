@@ -10,6 +10,7 @@ import {
   Download,
   Mail,
   MapPin,
+  Pencil,
   Phone,
   Search,
   ShieldCheck,
@@ -29,6 +30,7 @@ const emptyForm = {
   city: '',
   state: '',
   pincode: '',
+  isActive: true,
 };
 
 const csvCell = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
@@ -43,6 +45,7 @@ export default function Dealers() {
   const [copiedCode, setCopiedCode] = useState('');
 
   const [showCreate, setShowCreate] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -150,6 +153,23 @@ export default function Dealers() {
     setShowCreate(true);
   };
 
+  const openEdit = (dealer) => {
+    setEditTarget(dealer);
+    setError('');
+    setForm({
+      name: dealer.user?.name || '',
+      email: dealer.user?.email || '',
+      phone: dealer.user?.phone || '',
+      password: '',
+      companyName: dealer.companyName || '',
+      address: dealer.address || '',
+      city: dealer.city || '',
+      state: dealer.state || '',
+      pincode: dealer.pincode || '',
+      isActive: dealer.user?.isActive !== false,
+    });
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -160,6 +180,22 @@ export default function Dealers() {
       fetchDealers();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create dealer');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!editTarget) return;
+    setSaving(true);
+    setError('');
+    try {
+      await api.put(`/dealers/${editTarget.id}`, form);
+      setEditTarget(null);
+      fetchDealers();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update dealer');
     } finally {
       setSaving(false);
     }
@@ -341,13 +377,22 @@ export default function Dealers() {
               </span>
             </div>
 
-            <button
-              onClick={() => setDeleteTarget(dealer)}
-              className="flex h-10 w-10 items-center justify-center rounded-lg text-dark-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
-              title="Delete dealer"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            <div className="flex gap-1">
+              <button
+                onClick={() => openEdit(dealer)}
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-dark-400 transition-colors hover:bg-sky-50 hover:text-sky-700"
+                title="Edit dealer"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setDeleteTarget(dealer)}
+                className="flex h-10 w-10 items-center justify-center rounded-lg text-dark-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                title="Delete dealer"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -401,6 +446,46 @@ export default function Dealers() {
             </button>
           </form>
         )}
+      </Modal>
+
+      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title="Edit Dealer" subtitle={editTarget?.salesCode || ''}>
+        <form onSubmit={handleUpdate} className="space-y-4">
+          {error && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-dark-700">Owner Name</label>
+            <input required className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-dark-700">Email</label>
+              <input required type="email" className="input-field" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-dark-700">Phone</label>
+              <input required className="input-field" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-dark-700">Company Name</label>
+            <input className="input-field" value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-dark-700">Address</label>
+            <input className="input-field" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <input className="input-field" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="City" />
+            <input className="input-field" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} placeholder="State" />
+            <input className="input-field" value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value })} placeholder="Pincode" />
+          </div>
+          <label className="flex items-center gap-3 rounded-xl border border-dark-200 bg-dark-50 px-4 py-3 text-sm font-semibold text-dark-700">
+            <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4 rounded border-dark-300 text-primary-500 focus:ring-primary-500" />
+            Active dealer owner
+          </label>
+          <button type="submit" disabled={saving} className="btn-primary w-full">
+            {saving ? 'Saving...' : 'Save Dealer'}
+          </button>
+        </form>
       </Modal>
 
       <ConfirmDialog

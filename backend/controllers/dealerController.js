@@ -53,6 +53,35 @@ exports.updateDealerProfile = async (req, res) => {
   }
 };
 
+exports.updateDealerByAdmin = async (req, res) => {
+  try {
+    const dealer = await Dealer.findByPk(req.params.id, {
+      include: [{ model: User, as: 'user' }]
+    });
+    if (!dealer) return res.status(404).json({ message: 'Dealer not found' });
+
+    const { name, email, phone, isActive, companyName, address, city, state, pincode } = req.body;
+    if (dealer.user) {
+      if (name !== undefined) dealer.user.name = name;
+      if (email !== undefined) dealer.user.email = email;
+      if (phone !== undefined) dealer.user.phone = phone;
+      if (isActive !== undefined) dealer.user.isActive = isActive;
+      await dealer.user.save();
+    }
+
+    if (companyName !== undefined) dealer.companyName = companyName;
+    if (address !== undefined) dealer.address = address;
+    if (city !== undefined) dealer.city = city;
+    if (state !== undefined) dealer.state = state;
+    if (pincode !== undefined) dealer.pincode = pincode;
+    await dealer.save();
+
+    res.json({ success: true, message: 'Dealer updated', dealer });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // DELETE /api/dealers/:id — admin removes a dealer. Their customers' orders/vehicles are kept,
 // just detached from the dealer (set to "Direct"), matching how deleteUser handles dealers.
 exports.deleteDealer = async (req, res) => {

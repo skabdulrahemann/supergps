@@ -33,7 +33,7 @@ function RecenterMap({ position }) {
 
   useEffect(() => {
     if (!position) return;
-    map.flyTo([position.latitude, position.longitude], Math.max(map.getZoom(), 15), {
+    map.flyTo([position.latitude, position.longitude], Math.max(map.getZoom(), 17), {
       duration: 0.8,
     });
   }, [map, position]);
@@ -79,7 +79,6 @@ export default function VehicleTrackingModal({ vehicle, open, onClose }) {
     className: '',
     html: `
       <div class="tracking-marker">
-        <div class="tracking-marker__halo"></div>
         <img
           src="${markerImage}"
           alt=""
@@ -89,7 +88,7 @@ export default function VehicleTrackingModal({ vehicle, open, onClose }) {
       </div>
     `,
     iconSize: [58, 58],
-    iconAnchor: [29, 43],
+    iconAnchor: [29, 29],
   }), [markerImage, markerRotation]);
 
   useEffect(() => {
@@ -237,7 +236,7 @@ export default function VehicleTrackingModal({ vehicle, open, onClose }) {
             </div>
           ) : (
             <div className="relative">
-              <MapContainer center={center} zoom={hasPosition ? 15 : 5} className="h-[520px] w-full">
+              <MapContainer center={center} zoom={hasPosition ? 17 : 5} className="h-[520px] w-full">
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

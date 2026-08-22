@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { Vehicle, Order, User, Dealer, ActivationLog } = require('../models');
 
 function formatAgo(value) {
@@ -115,7 +116,7 @@ exports.createVehicle = async (req, res) => {
   try {
     const {
       customerId, dealerId, orderId, imeiNumber, deviceSerialNumber, simNumber,
-      vehicleNumber, vehicleType, vehicleBrand, vehicleModel, activationStatus
+      vehicleNumber, vehicleType, vehicleBrand, vehicleModel, activationStatus, activatedBy
     } = req.body;
 
     if (!customerId || !imeiNumber || !deviceSerialNumber) {
@@ -140,7 +141,7 @@ exports.createVehicle = async (req, res) => {
       vehicleBrand: vehicleBrand || null,
       vehicleModel: vehicleModel || null,
       activationStatus: activationStatus || 'pending',
-      activatedBy: req.user.id
+      activatedBy: activatedBy || req.user.id
     });
 
     res.status(201).json({ success: true, message: 'Device added', vehicle });
@@ -155,7 +156,57 @@ exports.updateVehicle = async (req, res) => {
     const vehicle = await Vehicle.findByPk(req.params.id);
     if (!vehicle) return res.status(404).json({ message: 'Device not found' });
 
-    const fields = ['vehicleNumber', 'vehicleType', 'vehicleBrand', 'vehicleModel', 'simNumber', 'dealerId', 'activationStatus', 'isActive'];
+    const {
+      customerId,
+      dealerId,
+      activatedBy,
+      imeiNumber,
+      deviceSerialNumber,
+    } = req.body;
+
+    if (customerId !== undefined) {
+      const customer = await User.findOne({ where: { id: customerId, role: 'customer' } });
+      if (!customer) return res.status(404).json({ message: 'Customer not found' });
+      vehicle.customerId = customerId;
+    }
+
+    if (dealerId !== undefined) {
+      if (dealerId) {
+        const dealer = await Dealer.findByPk(dealerId);
+        if (!dealer) return res.status(404).json({ message: 'Dealer not found' });
+        vehicle.dealerId = dealerId;
+      } else {
+        vehicle.dealerId = null;
+      }
+    }
+
+    if (activatedBy !== undefined) {
+      if (activatedBy) {
+        const technician = await User.findOne({ where: { id: activatedBy, role: 'technician' } });
+        if (!technician) return res.status(404).json({ message: 'Technician not found' });
+        vehicle.activatedBy = activatedBy;
+      } else {
+        vehicle.activatedBy = null;
+      }
+    }
+
+    if (imeiNumber !== undefined && imeiNumber !== vehicle.imeiNumber) {
+      const existingImei = await Vehicle.findOne({
+        where: { imeiNumber, id: { [Op.ne]: vehicle.id } }
+      });
+      if (existingImei) return res.status(400).json({ message: 'A device with this IMEI already exists' });
+      vehicle.imeiNumber = imeiNumber;
+    }
+
+    if (deviceSerialNumber !== undefined && deviceSerialNumber !== vehicle.deviceSerialNumber) {
+      const existingSerial = await Vehicle.findOne({
+        where: { deviceSerialNumber, id: { [Op.ne]: vehicle.id } }
+      });
+      if (existingSerial) return res.status(400).json({ message: 'A device with this serial number already exists' });
+      vehicle.deviceSerialNumber = deviceSerialNumber;
+    }
+
+    const fields = ['vehicleNumber', 'vehicleType', 'vehicleBrand', 'vehicleModel', 'simNumber', 'activationStatus', 'isActive'];
     fields.forEach((f) => {
       if (req.body[f] !== undefined) vehicle[f] = req.body[f];
     });

@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Gauge,
   MapPin,
+  Pencil,
   PlusCircle,
   Power,
   Radio,
@@ -25,6 +26,7 @@ import {
 const emptyForm = {
   customerId: '',
   dealerId: '',
+  activatedBy: '',
   imeiNumber: '',
   deviceSerialNumber: '',
   simNumber: '',
@@ -33,6 +35,7 @@ const emptyForm = {
   vehicleBrand: '',
   vehicleModel: '',
   activationStatus: 'pending',
+  isActive: true,
 };
 
 const statusConfig = {
@@ -63,8 +66,10 @@ export default function Vehicles() {
 
   const [customers, setCustomers] = useState([]);
   const [dealers, setDealers] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
 
   const [showCreate, setShowCreate] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -89,17 +94,57 @@ export default function Vehicles() {
     }
   };
 
+  const loadPeople = async () => {
+    const [custRes, dealerRes, techRes] = await Promise.all([
+      api.get('/users?role=customer'),
+      api.get('/dealers/all'),
+      api.get('/users?role=technician'),
+    ]);
+    setCustomers(custRes.data.users || []);
+    setDealers(dealerRes.data.dealers || []);
+    setTechnicians(techRes.data.users || []);
+  };
+
   const openCreate = async () => {
     setForm(emptyForm);
     setError('');
     setShowCreate(true);
     try {
-      const [custRes, dealerRes] = await Promise.all([api.get('/users?role=customer'), api.get('/dealers/all')]);
-      setCustomers(custRes.data.users || []);
-      setDealers(dealerRes.data.dealers || []);
+      await loadPeople();
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const openEdit = async (vehicle) => {
+    setEditTarget(vehicle);
+    setError('');
+    setForm({
+      customerId: vehicle.customerId || '',
+      dealerId: vehicle.dealerId || '',
+      activatedBy: vehicle.activatedBy || '',
+      imeiNumber: vehicle.imeiNumber || '',
+      deviceSerialNumber: vehicle.deviceSerialNumber || '',
+      simNumber: vehicle.simNumber || '',
+      vehicleNumber: vehicle.vehicleNumber || '',
+      vehicleType: vehicle.vehicleType || 'car',
+      vehicleBrand: vehicle.vehicleBrand || '',
+      vehicleModel: vehicle.vehicleModel || '',
+      activationStatus: vehicle.activationStatus || 'pending',
+      isActive: vehicle.isActive !== false,
+    });
+    try {
+      await loadPeople();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const closeEdit = () => {
+    if (saving) return;
+    setEditTarget(null);
+    setError('');
+    setForm(emptyForm);
   };
 
   const handleCreate = async (e) => {
@@ -112,6 +157,30 @@ export default function Vehicles() {
       fetchVehicles();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add device');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!editTarget) return;
+    setSaving(true);
+    setError('');
+    try {
+      await api.put(`/vehicles/${editTarget.id}`, {
+        ...form,
+        dealerId: form.dealerId || null,
+        activatedBy: form.activatedBy || null,
+        simNumber: form.simNumber || null,
+        vehicleNumber: form.vehicleNumber || null,
+        vehicleBrand: form.vehicleBrand || null,
+        vehicleModel: form.vehicleModel || null,
+      });
+      setEditTarget(null);
+      fetchVehicles();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update device');
     } finally {
       setSaving(false);
     }
@@ -383,6 +452,9 @@ export default function Vehicles() {
                 <button onClick={() => toggleActivation(vehicle)} className="btn-secondary flex items-center gap-2 px-3 py-2 text-sm">
                   <Power className="h-4 w-4" /> {vehicle.activationStatus === 'activated' ? 'Off' : 'On'}
                 </button>
+                <button onClick={() => openEdit(vehicle)} className="btn-secondary flex items-center gap-2 px-3 py-2 text-sm">
+                  <Pencil className="h-4 w-4" /> Edit
+                </button>
                 <button
                   onClick={() => setDeleteTarget(vehicle)}
                   className="flex h-10 w-10 items-center justify-center rounded-lg text-dark-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
@@ -471,6 +543,103 @@ export default function Vehicles() {
           </div>
           <button type="submit" disabled={saving} className="btn-primary w-full">
             {saving ? 'Adding...' : 'Add Device'}
+          </button>
+        </form>
+      </Modal>
+
+      <Modal
+        open={!!editTarget}
+        onClose={closeEdit}
+        title="Edit Device"
+        subtitle={editTarget ? `${editTarget.vehicleNumber || 'Unnamed vehicle'} - ${editTarget.imeiNumber}` : ''}
+      >
+        <form onSubmit={handleUpdate} className="space-y-4">
+          {error && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-dark-700">Customer</label>
+              <select required className="input-field" value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })}>
+                <option value="">Select customer...</option>
+                {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} - {customer.phone}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-dark-700">Dealer</label>
+              <select className="input-field" value={form.dealerId} onChange={(e) => setForm({ ...form, dealerId: e.target.value })}>
+                <option value="">Direct (no dealer)</option>
+                {dealers.map((dealer) => <option key={dealer.id} value={dealer.id}>{dealer.companyName || dealer.user?.name} - {dealer.salesCode}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-dark-700">Technician</label>
+            <select className="input-field" value={form.activatedBy} onChange={(e) => setForm({ ...form, activatedBy: e.target.value })}>
+              <option value="">No technician assigned</option>
+              {technicians.map((technician) => <option key={technician.id} value={technician.id}>{technician.name} - {technician.phone}</option>)}
+            </select>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-dark-700">IMEI Number</label>
+              <input required className="input-field" value={form.imeiNumber} onChange={(e) => setForm({ ...form, imeiNumber: e.target.value })} placeholder="15-digit IMEI" />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-dark-700">Serial Number</label>
+              <input required className="input-field" value={form.deviceSerialNumber} onChange={(e) => setForm({ ...form, deviceSerialNumber: e.target.value })} placeholder="SN-0001" />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-dark-700">SIM Number</label>
+              <input className="input-field" value={form.simNumber} onChange={(e) => setForm({ ...form, simNumber: e.target.value })} />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-dark-700">Vehicle Number</label>
+              <input className="input-field" value={form.vehicleNumber} onChange={(e) => setForm({ ...form, vehicleNumber: e.target.value })} placeholder="MH26AB1234" />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-dark-700">Vehicle Type</label>
+              <select className="input-field" value={form.vehicleType} onChange={(e) => setForm({ ...form, vehicleType: e.target.value })}>
+                <option value="car">Car</option>
+                <option value="bike">Bike</option>
+                <option value="truck">Truck</option>
+                <option value="bus">Bus</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-dark-700">Brand</label>
+              <input className="input-field" value={form.vehicleBrand} onChange={(e) => setForm({ ...form, vehicleBrand: e.target.value })} />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-dark-700">Model</label>
+              <input className="input-field" value={form.vehicleModel} onChange={(e) => setForm({ ...form, vehicleModel: e.target.value })} />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-dark-700">Activation Status</label>
+              <select className="input-field" value={form.activationStatus} onChange={(e) => setForm({ ...form, activationStatus: e.target.value })}>
+                <option value="pending">Pending</option>
+                <option value="in_progress">In Progress</option>
+                <option value="activated">Activated</option>
+                <option value="deactivated">Deactivated</option>
+              </select>
+            </div>
+            <label className="flex items-center gap-3 rounded-xl border border-dark-200 bg-dark-50 px-4 py-3 text-sm font-semibold text-dark-700">
+              <input
+                type="checkbox"
+                checked={form.isActive}
+                onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                className="h-4 w-4 rounded border-dark-300 text-primary-500 focus:ring-primary-500"
+              />
+              Active device
+            </label>
+          </div>
+          <button type="submit" disabled={saving} className="btn-primary w-full">
+            {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </form>
       </Modal>
