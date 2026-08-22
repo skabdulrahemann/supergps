@@ -2,6 +2,7 @@ const {
   getLatestPositionForVehicle,
   getPositionsForVehicle,
 } = require("../services/trackingService");
+const gatewayStats = require("../tracking/gatewayStats");
 
 const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -17,12 +18,10 @@ exports.getLatestPosition = async (req, res) => {
 
     const latest = await getLatestPositionForVehicle(vehicleId, req.user);
     if (!latest) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Vehicle not found or not accessible",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Vehicle not found or not accessible",
+      });
     }
 
     res.json({
@@ -51,12 +50,10 @@ exports.getTodayPositions = async (req, res) => {
       today: true,
     });
     if (!result) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Vehicle not found or not accessible",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Vehicle not found or not accessible",
+      });
     }
 
     res.json({
@@ -83,12 +80,10 @@ exports.getPositions = async (req, res) => {
       limit: req.query.limit,
     });
     if (!result) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Vehicle not found or not accessible",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Vehicle not found or not accessible",
+      });
     }
 
     res.json({
@@ -99,4 +94,11 @@ exports.getPositions = async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
+};
+
+exports.getGatewayStatus = async (req, res) => {
+  res.json({
+    success: true,
+    gateway: gatewayStats.snapshot(),
+  });
 };

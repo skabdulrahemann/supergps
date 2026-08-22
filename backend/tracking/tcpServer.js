@@ -11,13 +11,31 @@
  *   - Maharashtra AIS-140 SOP ASCII packets ($NMP/$HLP/$EPB)
  *   - Concox/Jimi GT06-family packets (Iconcox V5-style trackers)
  */
-const net = require('net');
-const { decodeImeiHandshake, decodeAvlPacket, encodeAck } = require('./teltonikaCodec');
-const { decodeMaharashtraPacket, encodeMaharashtraAck, looksLikeMaharashtraPacket } = require('./maharashtraProtocol');
-const { decodeGt06Packet, encodeGt06Ack, looksLikeGt06Packet, PROTOCOL_LOGIN } = require('./gt06Protocol');
+const net = require("net");
+const {
+  decodeImeiHandshake,
+  decodeAvlPacket,
+  encodeAck,
+} = require("./teltonikaCodec");
+const {
+  decodeMaharashtraPacket,
+  encodeMaharashtraAck,
+  looksLikeMaharashtraPacket,
+} = require("./maharashtraProtocol");
+const {
+  decodeGt06Packet,
+  encodeGt06Ack,
+  looksLikeGt06Packet,
+  PROTOCOL_LOGIN,
+} = require("./gt06Protocol");
+const gatewayStats = require("./gatewayStats");
 
 const ACCEPT = Buffer.from([0x01]);
 const REJECT = Buffer.from([0x00]);
+const MAX_BUFFER_BYTES = Number(
+  process.env.TRACKING_MAX_BUFFER_BYTES || 64 * 1024,
+);
+const RAW_LOGGING = process.env.TRACKING_RAW_LOGGING === "true";
 
 /**
  * @param {object} options
@@ -28,7 +46,13 @@ const REJECT = Buffer.from([0x00]);
  * @param {Console} [options.logger]
  * @returns {net.Server} an unstarted net.Server - call .listen(port) yourself
  */
-function createTrackingServer({ isImeiAuthorized, onPositions, onDeviceConnected, onDeviceDisconnected, logger = console } = {}) {
+function createTrackingServer({
+  isImeiAuthorized,
+  onPositions,
+  onDeviceConnected,
+  onDeviceDisconnected,
+  logger = console,
+} = {}) {
   const server = net.createServer((socket) => {
     let buffer = Buffer.alloc(0);
     let imei = null;
@@ -36,8 +60,18 @@ function createTrackingServer({ isImeiAuthorized, onPositions, onDeviceConnected
     let protocol = null;
     const remote = `${socket.remoteAddress}:${socket.remotePort}`;
 
-    socket.on('data', async (chunk) => {
+    socket.on("data", async (chunk) => {
       buffer = Buffer.concat([buffer, chunk]);
+      if (RAW_LOGGING)
+        logger.log(`[GPS RX] Remote: ${remote} HEX: ${chunk.toString("hex")}`);
+
+      if (buffer.length > MAX_BUFFER_BYTES) {
+        logger.warn(
+          `[tracking] Oversized GPS buffer from ${remote} (${buffer.length} bytes) - closing connection`,
+        );
+        socket.destroy();
+        return;
+      }
 
       try {
         // A single TCP chunk can contain a login and data packet, or several
@@ -48,46 +82,80 @@ function createTrackingServer({ isImeiAuthorized, onPositions, onDeviceConnected
           if (!protocol) protocol = detectProtocol(buffer);
           if (!protocol) break;
 
-          if (protocol === 'maharashtra') {
+          if (protocol === "maharashtra") {
             const decoded = decodeMaharashtraPacket(buffer);
             if (!decoded) break;
             buffer = buffer.subarray(decoded.bytesConsumed);
 
             if (decoded.imei && !authenticated) {
-              const accepted = await authorizeDevice(decoded.imei, 'Maharashtra', remote, socket, logger, isImeiAuthorized);
+              const accepted = await authorizeDevice(
+                decoded.imei,
+                "Maharashtra",
+                remote,
+                socket,
+                logger,
+                isImeiAuthorized,
+              );
               if (!accepted) return;
               imei = decoded.imei;
               authenticated = true;
+              gatewayStats.recordConnection("maharashtra");
               if (onDeviceConnected) onDeviceConnected(imei, remote);
             }
 
             if (!decoded.crcOk) {
-              logger.warn(`[tracking] Maharashtra checksum mismatch from IMEI ${imei || decoded.imei || 'unknown'} (${remote}) - packet discarded`);
+              gatewayStats.recordError("maharashtra");
+              logger.warn(
+                `[tracking] Maharashtra checksum mismatch from IMEI ${imei || decoded.imei || "unknown"} (${remote}) - packet discarded`,
+              );
               socket.write(encodeMaharashtraAck(false));
               continue;
             }
 
-            if (decoded.records.length > 0 && onPositions) await onPositions(imei || decoded.imei, decoded.records);
+            gatewayStats.recordPacket("maharashtra");
+            if (decoded.records.length > 0 && onPositions)
+              await onPositions(imei || decoded.imei, decoded.records);
             socket.write(encodeMaharashtraAck(true));
             continue;
           }
 
-          if (protocol === 'gt06') {
+          if (protocol === "gt06") {
             const decoded = decodeGt06Packet(buffer);
             if (!decoded) break;
             buffer = buffer.subarray(decoded.bytesConsumed);
 
             if (!decoded.crcOk) {
-              logger.warn(`[tracking] GT06 CRC mismatch from IMEI ${imei || 'unknown'} (${remote}) - packet discarded`);
+              gatewayStats.recordError("gt06");
+              logger.warn(
+                `[tracking] GT06 CRC mismatch from IMEI ${imei || "unknown"} (${remote}) - packet discarded`,
+              );
               continue;
             }
+            logger.log(
+              `[GPS DECODE] Protocol: gt06 IMEI: ${imei || decoded.imei || "pending"} Type: ${decoded.packetType}`,
+            );
+            gatewayStats.recordPacket("gt06");
 
             if (decoded.protocolNumber === PROTOCOL_LOGIN) {
-              const accepted = await authorizeDevice(decoded.imei, 'GT06', remote, socket, logger, isImeiAuthorized, false);
+              const accepted = await authorizeDevice(
+                decoded.imei,
+                "GT06",
+                remote,
+                socket,
+                logger,
+                isImeiAuthorized,
+                false,
+              );
               if (!accepted) return;
               imei = decoded.imei;
               authenticated = true;
-              socket.write(encodeGt06Ack(decoded.protocolNumber, decoded.serial));
+              gatewayStats.recordConnection("gt06");
+              writePacket(
+                socket,
+                encodeGt06Ack(decoded.protocolNumber, decoded.serial),
+                logger,
+                "GT06 login ACK",
+              );
               if (onDeviceConnected) onDeviceConnected(imei, remote);
               continue;
             }
@@ -98,8 +166,14 @@ function createTrackingServer({ isImeiAuthorized, onPositions, onDeviceConnected
               return;
             }
 
-            if (decoded.records.length > 0 && onPositions) await onPositions(imei, decoded.records);
-            socket.write(encodeGt06Ack(decoded.protocolNumber, decoded.serial));
+            if (decoded.records.length > 0 && onPositions)
+              await onPositions(imei, decoded.records);
+            writePacket(
+              socket,
+              encodeGt06Ack(decoded.protocolNumber, decoded.serial),
+              logger,
+              "GT06 ACK",
+            );
             continue;
           }
 
@@ -107,13 +181,21 @@ function createTrackingServer({ isImeiAuthorized, onPositions, onDeviceConnected
             const handshake = decodeImeiHandshake(buffer);
             if (!handshake) break;
 
-            const accepted = await authorizeDevice(handshake.imei, 'Teltonika', remote, socket, logger, isImeiAuthorized);
+            const accepted = await authorizeDevice(
+              handshake.imei,
+              "Teltonika",
+              remote,
+              socket,
+              logger,
+              isImeiAuthorized,
+            );
             if (!accepted) return;
 
             imei = handshake.imei;
             buffer = buffer.subarray(handshake.bytesConsumed);
             authenticated = true;
-            socket.write(ACCEPT);
+            gatewayStats.recordConnection("teltonika");
+            writePacket(socket, ACCEPT, logger, "Teltonika accept");
             if (onDeviceConnected) onDeviceConnected(imei, remote);
             continue;
           }
@@ -123,26 +205,40 @@ function createTrackingServer({ isImeiAuthorized, onPositions, onDeviceConnected
           buffer = buffer.subarray(decoded.bytesConsumed);
 
           if (!decoded.crcOk) {
-            logger.warn(`[tracking] Teltonika CRC mismatch from IMEI ${imei} (${remote}) - packet discarded`);
-            socket.write(encodeAck(0));
+            gatewayStats.recordError("teltonika");
+            logger.warn(
+              `[tracking] Teltonika CRC mismatch from IMEI ${imei} (${remote}) - packet discarded`,
+            );
+            writePacket(socket, encodeAck(0), logger, "Teltonika reject ACK");
             continue;
           }
 
+          gatewayStats.recordPacket("teltonika");
           if (onPositions) await onPositions(imei, decoded.records);
-          socket.write(encodeAck(decoded.records.length));
+          writePacket(
+            socket,
+            encodeAck(decoded.records.length),
+            logger,
+            "Teltonika AVL ACK",
+          );
         }
       } catch (err) {
-        logger.error(`[tracking] Protocol error from IMEI ${imei || 'unknown'} (${remote}): ${err.message}`);
+        gatewayStats.recordError(protocol);
+        logger.error(
+          `[tracking] Protocol error from IMEI ${imei || "unknown"} (${remote}): ${err.message}`,
+        );
         socket.destroy();
       }
     });
 
-    socket.on('error', (err) => {
+    socket.on("error", (err) => {
       logger.error(`[tracking] Socket error (${remote}): ${err.message}`);
     });
 
-    socket.on('close', () => {
-      logger.log(`[tracking] Device disconnected: IMEI ${imei || 'unknown'} (${remote})`);
+    socket.on("close", () => {
+      logger.log(
+        `[tracking] Device disconnected: IMEI ${imei || "unknown"} (${remote})`,
+      );
       if (imei && onDeviceDisconnected) onDeviceDisconnected(imei, remote);
     });
   });
@@ -150,23 +246,40 @@ function createTrackingServer({ isImeiAuthorized, onPositions, onDeviceConnected
   return server;
 }
 
-function detectProtocol(buffer) {
-  if (buffer.length === 0) return null;
-  if (looksLikeMaharashtraPacket(buffer)) return 'maharashtra';
-  if (looksLikeGt06Packet(buffer)) return 'gt06';
-  return 'teltonika';
+function writePacket(socket, packet, logger, label) {
+  if (RAW_LOGGING) logger.log(`[GPS TX] ${label}: ${packet.toString("hex")}`);
+  socket.write(packet);
 }
 
-async function authorizeDevice(imei, protocol, remote, socket, logger, isImeiAuthorized, writeRejectByte = true) {
+function detectProtocol(buffer) {
+  if (buffer.length === 0) return null;
+  if (looksLikeMaharashtraPacket(buffer)) return "maharashtra";
+  if (looksLikeGt06Packet(buffer)) return "gt06";
+  return "teltonika";
+}
+
+async function authorizeDevice(
+  imei,
+  protocol,
+  remote,
+  socket,
+  logger,
+  isImeiAuthorized,
+  writeRejectByte = true,
+) {
   const authorized = isImeiAuthorized ? await isImeiAuthorized(imei) : true;
   if (!authorized) {
-    logger.warn(`[tracking] Rejected unregistered ${protocol} IMEI ${imei} from ${remote}`);
+    logger.warn(
+      `[tracking] Rejected unregistered ${protocol} IMEI ${imei} from ${remote}`,
+    );
     if (writeRejectByte) socket.write(REJECT);
     socket.end();
     return false;
   }
 
-  logger.log(`[tracking] ${protocol} device connected: IMEI ${imei} (${remote})`);
+  logger.log(
+    `[tracking] ${protocol} device connected: IMEI ${imei} (${remote})`,
+  );
   return true;
 }
 

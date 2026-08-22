@@ -11,13 +11,31 @@ const START_LONG = 0x7979;
 const STOP = 0x0d0a;
 
 const PROTOCOL_LOGIN = 0x01;
+const PROTOCOL_GPS = 0x10;
+const PROTOCOL_GPS_LBS_1 = 0x11;
 const PROTOCOL_LOCATION = 0x12;
 const PROTOCOL_HEARTBEAT = 0x13;
 const PROTOCOL_ALARM = 0x16;
+const PROTOCOL_GPS_LBS_STATUS = 0x22;
+const PROTOCOL_ALARM_EXTENDED = 0x26;
+const PROTOCOL_GPS_LBS_EXTENDED = 0x27;
+
+const LOCATION_PROTOCOLS = new Set([
+  PROTOCOL_GPS,
+  PROTOCOL_GPS_LBS_1,
+  PROTOCOL_LOCATION,
+  PROTOCOL_ALARM,
+  PROTOCOL_GPS_LBS_STATUS,
+  PROTOCOL_ALARM_EXTENDED,
+  PROTOCOL_GPS_LBS_EXTENDED,
+]);
 
 function looksLikeGt06Packet(buffer) {
-  return buffer.length >= 2
-    && (buffer.readUInt16BE(0) === START_SHORT || buffer.readUInt16BE(0) === START_LONG);
+  return (
+    buffer.length >= 2 &&
+    (buffer.readUInt16BE(0) === START_SHORT ||
+      buffer.readUInt16BE(0) === START_LONG)
+  );
 }
 
 function decodeGt06Packet(buffer) {
@@ -36,7 +54,8 @@ function decodeGt06Packet(buffer) {
   if (buffer.length < totalPacketLength) return null;
 
   const stop = buffer.readUInt16BE(totalPacketLength - 2);
-  if (stop !== STOP) throw new Error(`Invalid GT06 stop bits: 0x${stop.toString(16)}`);
+  if (stop !== STOP)
+    throw new Error(`Invalid GT06 stop bits: 0x${stop.toString(16)}`);
 
   const protocolNumber = buffer.readUInt8(headerLength);
   const serialOffset = totalPacketLength - 6;
@@ -51,7 +70,7 @@ function decodeGt06Packet(buffer) {
 
   const parsed = parseContent(protocolNumber, content);
   return {
-    protocol: 'gt06',
+    protocol: "gt06",
     protocolNumber,
     serial,
     crcOk,
@@ -62,25 +81,47 @@ function decodeGt06Packet(buffer) {
 
 function parseContent(protocolNumber, content) {
   if (protocolNumber === PROTOCOL_LOGIN) {
-    return { imei: decodeBcd(content.subarray(0, 8)).replace(/^0+/, ''), records: [], packetType: 'login' };
+    return {
+      imei: decodeBcd(content.subarray(0, 8)).replace(/^0+/, ""),
+      records: [],
+      packetType: "login",
+    };
   }
 
-  if (protocolNumber === PROTOCOL_LOCATION || protocolNumber === PROTOCOL_ALARM) {
-    return { imei: null, records: [decodeLocation(content)], packetType: protocolNumber === PROTOCOL_ALARM ? 'alarm' : 'location' };
+  if (LOCATION_PROTOCOLS.has(protocolNumber)) {
+    return {
+      imei: null,
+      records: [decodeLocation(content, protocolNumber)],
+      packetType:
+        protocolNumber === PROTOCOL_ALARM ||
+        protocolNumber === PROTOCOL_ALARM_EXTENDED
+          ? "alarm"
+          : "location",
+    };
   }
 
   if (protocolNumber === PROTOCOL_HEARTBEAT) {
-    return { imei: null, records: [], packetType: 'heartbeat' };
+    return {
+      imei: null,
+      records: [],
+      packetType: "heartbeat",
+      status: decodeStatus(content),
+    };
   }
 
-  return { imei: null, records: [], packetType: `0x${protocolNumber.toString(16)}` };
+  return {
+    imei: null,
+    records: [],
+    packetType: `0x${protocolNumber.toString(16)}`,
+  };
 }
 
-function decodeLocation(content) {
-  if (content.length < 18) throw new Error('GT06 location content too short');
+function decodeLocation(content, protocolNumber) {
+  if (content.length < 18) throw new Error("GT06 location content too short");
 
   const timestamp = decodeDateTime(content, 0);
   const gpsInfo = content.readUInt8(6);
+  const gpsLength = gpsInfo >> 4;
   const satellites = gpsInfo & 0x0f;
   let latitude = content.readUInt32BE(7) / 1800000;
   let longitude = content.readUInt32BE(11) / 1800000;
@@ -93,6 +134,9 @@ function decodeLocation(content) {
   if (!north) latitude = -latitude;
   if (west) longitude = -longitude;
 
+  const network = decodeLbs(content, 18);
+  const tail = decodeLocationTail(content, 18 + network.bytesConsumed);
+
   return {
     timestamp,
     priority: null,
@@ -102,11 +146,64 @@ function decodeLocation(content) {
     course,
     satellites,
     speedKmh,
-    ignition: null,
+    ignition: tail.ignition,
     io: {
+      protocolNumber,
       gpsInfo,
+      gpsLength,
       courseStatus,
+      gpsValid: Boolean(gpsInfo & 0xf0),
+      network: network.data,
+      status: tail.status,
+      batteryLevel: tail.batteryLevel,
+      gsmSignal: tail.gsmSignal,
+      alarm: tail.alarm,
     },
+  };
+}
+
+function decodeLbs(content, offset) {
+  if (content.length < offset + 8) return { bytesConsumed: 0, data: null };
+
+  const mcc = content.readUInt16BE(offset);
+  const mnc = content.readUInt8(offset + 2);
+  const lac = content.readUInt16BE(offset + 3);
+  const cellId = content.readUIntBE(offset + 5, 3);
+  return {
+    bytesConsumed: 8,
+    data: { mcc, mnc, lac, cellId },
+  };
+}
+
+function decodeLocationTail(content, offset) {
+  if (content.length <= offset) return {};
+
+  const terminalInfo = content.readUInt8(offset);
+  const voltage =
+    content.length > offset + 1 ? content.readUInt8(offset + 1) : null;
+  const gsmSignal =
+    content.length > offset + 2 ? content.readUInt8(offset + 2) : null;
+  const alarm =
+    content.length > offset + 3 ? content.readUInt8(offset + 3) : null;
+
+  return {
+    ignition: Boolean(terminalInfo & 0x02),
+    status: { terminalInfo },
+    batteryLevel: voltage,
+    gsmSignal,
+    alarm,
+  };
+}
+
+function decodeStatus(content) {
+  if (content.length < 3) return {};
+  const terminalInfo = content.readUInt8(0);
+  return {
+    terminalInfo,
+    ignition: Boolean(terminalInfo & 0x02),
+    batteryLevel: content.readUInt8(1),
+    gsmSignal: content.readUInt8(2),
+    alarm: content.length > 3 ? content.readUInt8(3) : null,
   };
 }
 
@@ -121,7 +218,7 @@ function decodeDateTime(buffer, offset) {
 }
 
 function decodeBcd(buffer) {
-  let text = '';
+  let text = "";
   for (const byte of buffer) {
     text += ((byte >> 4) & 0x0f).toString(16);
     text += (byte & 0x0f).toString(16);
@@ -152,10 +249,10 @@ function crc16x25(buffer) {
   for (const byte of buffer) {
     crc ^= byte;
     for (let bit = 0; bit < 8; bit++) {
-      crc = (crc & 0x0001) ? (crc >>> 1) ^ 0x8408 : crc >>> 1;
+      crc = crc & 0x0001 ? (crc >>> 1) ^ 0x8408 : crc >>> 1;
     }
   }
-  return (~crc) & 0xffff;
+  return ~crc & 0xffff;
 }
 
 module.exports = {
@@ -164,7 +261,12 @@ module.exports = {
   looksLikeGt06Packet,
   crc16x25,
   PROTOCOL_LOGIN,
+  PROTOCOL_GPS,
+  PROTOCOL_GPS_LBS_1,
   PROTOCOL_LOCATION,
   PROTOCOL_HEARTBEAT,
   PROTOCOL_ALARM,
+  PROTOCOL_GPS_LBS_STATUS,
+  PROTOCOL_ALARM_EXTENDED,
+  PROTOCOL_GPS_LBS_EXTENDED,
 };
