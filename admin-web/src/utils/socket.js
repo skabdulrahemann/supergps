@@ -15,7 +15,7 @@ export function createTrackingSocket() {
   const token = localStorage.getItem('token');
   return io(getSocketUrl(), {
     auth: { token },
-    transports: ['polling', 'websocket'],
+    transports: ['websocket'],
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 500,

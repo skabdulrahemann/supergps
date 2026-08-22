@@ -24,7 +24,8 @@ class LiveTrackingScreen extends StatelessWidget {
     final vehicleId = vehicle?.id;
     if (vehicleId == null || vehicleId.isEmpty) return null;
     final res = await ApiService.get('/tracking/$vehicleId/latest');
-    return Map<String, dynamic>.from(res as Map);
+    if (res is! Map) return null;
+    return Map<String, dynamic>.from(res);
   }
 
   String _formatSpeed(dynamic value) {
@@ -104,16 +105,23 @@ class LiveTrackingScreen extends StatelessWidget {
           }
 
           final data = snapshot.data;
-          final position = data?['position'] as Map<String, dynamic>?;
-          final vehicleSnapshot = data?['vehicle'] as Map<String, dynamic>?;
-          final latitude = double.tryParse(position?['latitude']?.toString() ??
-              vehicle?.lastLatitude?.toString() ??
-              '');
+          final position = data?['position'] is Map
+              ? Map<String, dynamic>.from(data!['position'] as Map)
+              : null;
+          final vehicleSnapshot = data?['vehicle'] is Map
+              ? Map<String, dynamic>.from(data!['vehicle'] as Map)
+              : null;
+          final displayLatitude =
+              position?['latitude'] ?? vehicleSnapshot?['lastLatitude'] ?? vehicle?.lastLatitude;
+          final displayLongitude =
+              position?['longitude'] ?? vehicleSnapshot?['lastLongitude'] ?? vehicle?.lastLongitude;
+          final latitude = double.tryParse(displayLatitude?.toString() ?? '');
           final longitude = double.tryParse(
-              position?['longitude']?.toString() ??
-                  vehicle?.lastLongitude?.toString() ??
+              displayLongitude?.toString() ?? '');
+          final course = double.tryParse(
+              (position?['course'] ?? vehicleSnapshot?['lastCourse'])
+                      ?.toString() ??
                   '');
-          final course = double.tryParse(position?['course']?.toString() ?? '');
           final hasPosition = latitude != null && longitude != null;
           final status = _formatStatus(vehicleSnapshot);
           final speed = _formatSpeed(position?['speedKmh'] ??
@@ -124,7 +132,7 @@ class LiveTrackingScreen extends StatelessWidget {
               vehicle?.lastSeen ??
               'Not received yet';
           final location = hasPosition
-              ? '${position!['latitude']}, ${position['longitude']}'
+              ? '$latitude, $longitude'
               : vehicle?.lastLocation ?? 'Waiting for first GPS fix';
 
           if (snapshot.connectionState == ConnectionState.waiting &&

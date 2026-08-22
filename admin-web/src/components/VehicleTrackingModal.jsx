@@ -134,9 +134,9 @@ export default function VehicleTrackingModal({ vehicle, open, onClose }) {
     });
 
     socket.on('connect_error', (err) => {
-      setSocketStatus('Socket disconnected');
+      setSocketStatus('Polling latest location');
       setSocketLive(false);
-      setError(err.message || 'Live connection failed.');
+      setError('Live socket connect nahi hua, latest location auto-refresh se update ho rahi hai.');
     });
 
     socket.on('tracking:connected', () => {
@@ -163,7 +163,7 @@ export default function VehicleTrackingModal({ vehicle, open, onClose }) {
     });
 
     socket.on('disconnect', () => {
-      setSocketStatus('Disconnected');
+      setSocketStatus('Polling latest location');
       setSocketLive(false);
     });
 
