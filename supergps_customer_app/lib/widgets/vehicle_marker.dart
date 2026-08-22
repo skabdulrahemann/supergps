@@ -6,26 +6,46 @@ class VehicleMarker extends StatelessWidget {
   final String vehicleType;
   final double heading;
   final bool online;
+  final bool running;
 
   const VehicleMarker({
     super.key,
     required this.vehicleType,
     required this.heading,
     required this.online,
+    this.running = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final halo = online ? AppColors.success : AppColors.textMuted;
+    final halo = running
+        ? AppColors.success
+        : online
+            ? AppColors.primary
+            : AppColors.textMuted;
     return Stack(
       alignment: Alignment.center,
       children: [
+        if (running)
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.success.withValues(alpha: 0.16),
+              border: Border.all(
+                color: AppColors.success.withValues(alpha: 0.55),
+                width: 2,
+              ),
+            ),
+          ),
         DecoratedBox(
           decoration: BoxDecoration(
+            shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: halo.withValues(alpha: 0.20),
-                blurRadius: 16,
+                color: halo.withValues(alpha: running ? 0.34 : 0.20),
+                blurRadius: running ? 22 : 16,
                 offset: const Offset(0, 8),
               ),
             ],

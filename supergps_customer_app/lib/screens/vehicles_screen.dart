@@ -178,13 +178,18 @@ class _VehicleCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 46,
-                height: 46,
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
                     color: AppColors.tint(_statusColor),
                     borderRadius: BorderRadius.circular(14)),
-                child: Icon(_vehicleIcon(vehicle.vehicleType),
-                    color: _statusColor, size: 25),
+                child: Padding(
+                  padding: const EdgeInsets.all(5),
+                  child: Image.asset(
+                    _vehicleImageAsset(vehicle.vehicleType),
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -304,21 +309,6 @@ class _VehicleCard extends StatelessWidget {
       ),
     );
   }
-
-  IconData _vehicleIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'truck':
-        return Icons.local_shipping_rounded;
-      case 'bike':
-        return Icons.two_wheeler_rounded;
-      case 'bus':
-        return Icons.directions_bus_rounded;
-      case 'tractor':
-        return Icons.agriculture_rounded;
-      default:
-        return Icons.directions_car_rounded;
-    }
-  }
 }
 
 class _VehicleActionsSheet extends StatelessWidget {
@@ -387,14 +377,19 @@ class _VehicleActionsSheet extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 62,
+                  height: 62,
                   decoration: BoxDecoration(
-                    color: AppColors.softYellow,
+                    color: AppColors.tint(AppColors.primary),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(_vehicleIcon(vehicle.vehicleType),
-                      color: AppColors.textPrimary),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Image.asset(
+                      _vehicleImageAsset(vehicle.vehicleType),
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -436,21 +431,19 @@ class _VehicleActionsSheet extends StatelessWidget {
       ),
     );
   }
+}
 
-  IconData _vehicleIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'truck':
-        return Icons.local_shipping_rounded;
-      case 'bike':
-        return Icons.two_wheeler_rounded;
-      case 'bus':
-        return Icons.directions_bus_rounded;
-      case 'tractor':
-        return Icons.agriculture_rounded;
-      default:
-        return Icons.directions_car_rounded;
-    }
+String _vehicleImageAsset(String type) {
+  final normalized = type.toLowerCase();
+  if (normalized.contains('truck') || normalized.contains('lorry')) {
+    return 'assets/gps_marker/trucks.png';
   }
+  if (normalized.contains('bike') ||
+      normalized.contains('motorcycle') ||
+      normalized.contains('scooter')) {
+    return 'assets/gps_marker/bike.png';
+  }
+  return 'assets/gps_marker/car.png';
 }
 
 class _SheetAction {

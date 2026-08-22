@@ -25,6 +25,30 @@ CORS_ORIGIN=http://localhost:5173
 
 For production, use `.env.production.example` as the base and set `DB_SYNC=false` after your database schema is ready.
 
+## OSRM Map Matching
+
+OSRM is optional and disabled by default. Enable it when a self-hosted OSRM
+server is running, so incoming GPS fixes are snapped to nearby roads before
+they are saved and emitted to Flutter.
+
+```env
+OSRM_MAP_MATCHING_ENABLED=true
+OSRM_BASE_URL=http://127.0.0.1:5000
+OSRM_PROFILE=driving
+OSRM_MATCH_RADIUS_METERS=35
+OSRM_MAX_SNAP_METERS=80
+OSRM_TIMEOUT_MS=1200
+```
+
+Example local OSRM flow:
+
+```bash
+docker run -t -v "$PWD/osrm:/data" osrm/osrm-backend osrm-extract -p /opt/car.lua /data/india-latest.osm.pbf
+docker run -t -v "$PWD/osrm:/data" osrm/osrm-backend osrm-partition /data/india-latest.osrm
+docker run -t -v "$PWD/osrm:/data" osrm/osrm-backend osrm-customize /data/india-latest.osrm
+docker run -p 5000:5000 -v "$PWD/osrm:/data" osrm/osrm-backend osrm-routed --algorithm mld /data/india-latest.osrm
+```
+
 ## Development Seed Users
 
 Use these only after running `npm run seed` in development or staging. Do not run force seed against production data.

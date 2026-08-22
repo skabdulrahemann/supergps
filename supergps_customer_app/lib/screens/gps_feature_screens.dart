@@ -56,6 +56,8 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
   bool _loading = true;
   bool _mapReady = false;
   bool _hasCenteredInitially = false;
+  bool _autoFollow = true;
+  bool _autoZoom = true;
   String? _error;
 
   @override
@@ -167,30 +169,35 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
     if (position.vehicleId != widget.vehicle?.id) return;
     final previous = _currentPosition;
     if (!GpsFilter.shouldAccept(next: position, previous: previous)) return;
+    final displayPosition =
+        GpsFilter.smoothForDisplay(next: position, previous: previous);
 
     final shouldAppend = _routePositions.isEmpty ||
-        GpsFilter.shouldAccept(next: position, previous: _routePositions.last);
+        GpsFilter.shouldAccept(
+            next: displayPosition, previous: _routePositions.last);
 
     setState(() {
-      _currentPosition = position;
-      if (shouldAppend) _routePositions = [..._routePositions, position];
+      _currentPosition = displayPosition;
+      if (shouldAppend) _routePositions = [..._routePositions, displayPosition];
     });
 
     if (animate && _markerPoint != null) {
-      _animateMarker(position);
+      _animateMarker(displayPosition, previous: previous);
     } else {
       setState(() {
-        _markerPoint = position.point;
-        _heading = position.heading;
+        _markerPoint = displayPosition.point;
+        _heading = displayPosition.heading;
       });
+      _syncCameraWithVehicle();
     }
   }
 
-  void _animateMarker(VehiclePosition next) {
+  void _animateMarker(VehiclePosition next, {VehiclePosition? previous}) {
     _fromPoint = _markerPoint;
     _toPoint = next.point;
     _fromHeading = _heading;
     _toHeading = next.heading;
+    _moveController.duration = _movementDuration(next, previous);
     _moveController
       ..stop()
       ..reset()
@@ -206,6 +213,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
       _markerPoint = lerpLatLng(from, to, t);
       _heading = lerpHeading(_fromHeading, _toHeading, t);
     });
+    _syncCameraWithVehicle();
   }
 
   void _centerOnVehicle({double? zoom, bool onlyOnce = false}) {
@@ -214,6 +222,35 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
     if (point == null || !_mapReady) return;
     _mapController.move(point, zoom ?? _mapController.camera.zoom);
     if (onlyOnce) _hasCenteredInitially = true;
+  }
+
+  void _syncCameraWithVehicle() {
+    if (!_autoFollow) return;
+    final point = _markerPoint;
+    if (point == null || !_mapReady) return;
+    _mapController.move(
+        point, _autoZoom ? _targetLiveZoom() : _mapController.camera.zoom);
+  }
+
+  double _targetLiveZoom() {
+    final speed = _currentPosition?.speedKmh ?? 0;
+    if (speed > 70) return 15.8;
+    if (speed > 35) return 16.5;
+    return 17.4;
+  }
+
+  Duration _movementDuration(
+    VehiclePosition next,
+    VehiclePosition? previous,
+  ) {
+    final fromTime = previous?.deviceTime ?? previous?.receivedAt;
+    final toTime = next.deviceTime ?? next.receivedAt;
+    if (fromTime == null || toTime == null) {
+      return const Duration(milliseconds: 1300);
+    }
+    final milliseconds = toTime.difference(fromTime).inMilliseconds;
+    if (milliseconds <= 0) return const Duration(milliseconds: 1100);
+    return Duration(milliseconds: milliseconds.clamp(900, 2600));
   }
 
   Future<void> _refresh() async => _bootstrap();
@@ -285,6 +322,11 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
                         _mapReady = true;
                         _centerOnVehicle(zoom: 17, onlyOnce: true);
                       },
+                      onPositionChanged: (_, hasGesture) {
+                        if (hasGesture && _autoFollow) {
+                          setState(() => _autoFollow = false);
+                        }
+                      },
                       interactionOptions: const InteractionOptions(
                         flags: InteractiveFlag.drag |
                             InteractiveFlag.pinchZoom |
@@ -333,6 +375,7 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
                                         'car'),
                                 heading: _heading,
                                 online: status != 'Offline',
+                                running: status == 'Moving',
                               ),
                             ),
                           ],
@@ -356,7 +399,27 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
                 const SizedBox(height: 10),
                 _MapButton(
                   icon: Icons.my_location_rounded,
-                  onTap: () => _centerOnVehicle(zoom: 17),
+                  onTap: () {
+                    setState(() {
+                      _autoFollow = true;
+                      _autoZoom = true;
+                    });
+                    _centerOnVehicle(zoom: _targetLiveZoom());
+                  },
+                ),
+                const SizedBox(height: 10),
+                _MapButton(
+                  icon: _autoZoom
+                      ? Icons.center_focus_strong_rounded
+                      : Icons.center_focus_weak_rounded,
+                  active: _autoFollow && _autoZoom,
+                  onTap: () {
+                    setState(() {
+                      _autoFollow = true;
+                      _autoZoom = !_autoZoom;
+                    });
+                    _syncCameraWithVehicle();
+                  },
                 ),
                 const SizedBox(height: 10),
                 _MapButton(icon: Icons.open_in_new_rounded, onTap: _openMaps),
@@ -472,12 +535,17 @@ class _LiveTrackingScreenState extends State<LiveTrackingScreen>
 class _MapButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _MapButton({required this.icon, required this.onTap});
+  final bool active;
+  const _MapButton({
+    required this.icon,
+    required this.onTap,
+    this.active = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: active ? AppColors.primary : Colors.white,
       borderRadius: BorderRadius.circular(16),
       elevation: 4,
       shadowColor: Colors.black.withValues(alpha: 0.12),
@@ -487,7 +555,8 @@ class _MapButton extends StatelessWidget {
         child: SizedBox(
           width: 48,
           height: 48,
-          child: Icon(icon, color: AppColors.textPrimary),
+          child:
+              Icon(icon, color: active ? Colors.white : AppColors.textPrimary),
         ),
       ),
     );

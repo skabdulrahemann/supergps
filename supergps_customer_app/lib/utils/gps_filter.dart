@@ -4,7 +4,9 @@ import 'distance_utils.dart';
 
 class GpsFilter {
   static const double minRoutePointMeters = 4;
+  static const double displayJitterMeters = 35;
   static const double maxPlausibleKmhWithoutProof = 140;
+  static const double maxShortIntervalJumpMeters = 450;
   static const double maxStationaryJumpMeters = 300;
   static const double maxUntimedJumpMeters = 1000;
 
@@ -48,6 +50,11 @@ class GpsFilter {
 
     final impliedKmh = (distanceMeters / seconds) * 3.6;
     final reportedSpeed = next.speedKmh;
+    if (seconds <= 8 &&
+        distanceMeters > maxShortIntervalJumpMeters &&
+        reportedSpeed < 80) {
+      return false;
+    }
     final allowedMeters =
         ((reportedSpeed + 60).clamp(80, maxPlausibleKmhWithoutProof) / 3.6) *
                 seconds +
@@ -62,6 +69,35 @@ class GpsFilter {
     }
 
     return true;
+  }
+
+  static VehiclePosition smoothForDisplay({
+    required VehiclePosition next,
+    VehiclePosition? previous,
+  }) {
+    if (previous == null || !isValidPosition(previous)) return next;
+    if (!isValidPosition(next)) return next;
+
+    final distanceMeters = metersBetween(previous.point, next.point);
+    if (distanceMeters <= minRoutePointMeters) {
+      return next.copyWith(
+        latitude: previous.latitude,
+        longitude: previous.longitude,
+        heading: previous.heading,
+      );
+    }
+
+    final lowSpeed = next.speedKmh <= 55;
+    if (lowSpeed && distanceMeters <= displayJitterMeters) {
+      final blend = next.speedKmh <= 8 ? 0.22 : 0.42;
+      return next.copyWith(
+        latitude: _lerp(previous.latitude, next.latitude, blend),
+        longitude: _lerp(previous.longitude, next.longitude, blend),
+        heading: _lerpHeading(previous.heading, next.heading, blend),
+      );
+    }
+
+    return next;
   }
 
   static List<VehiclePosition> cleanRoute(List<VehiclePosition> positions) {
@@ -84,5 +120,16 @@ class GpsFilter {
     }
     if (sampled.last != points.last) sampled.add(points.last);
     return sampled;
+  }
+
+  static double _lerp(double from, double to, double t) {
+    return from + (to - from) * t;
+  }
+
+  static double _lerpHeading(double from, double to, double t) {
+    final diff = ((to - from + 540) % 360) - 180;
+    final result = from + diff * t;
+    final normalized = result % 360;
+    return normalized < 0 ? normalized + 360 : normalized;
   }
 }

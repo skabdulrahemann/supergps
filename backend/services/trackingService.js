@@ -1,6 +1,7 @@
 const { Op } = require("sequelize");
 const { Vehicle, Position, Dealer } = require("../models");
 const { emitTrackingPosition } = require("../tracking/trackingEvents");
+const { matchRecordsToRoad } = require("./osrmMapMatcher");
 
 function sanitizeRawValue(value) {
   if (Buffer.isBuffer(value)) return value.toString("hex");
@@ -121,8 +122,9 @@ async function savePositionsForImei(imeiNumber, records) {
   if (validRecords.length === 0) {
     return { vehicle, positions: [] };
   }
+  const matchedRecords = await matchRecordsToRoad(validRecords, vehicle);
 
-  const positionRows = validRecords.map((record) => ({
+  const positionRows = matchedRecords.map((record) => ({
     vehicleId: vehicle.id,
     imeiNumber,
     latitude: record.latitude,
@@ -140,6 +142,7 @@ async function savePositionsForImei(imeiNumber, records) {
       eventIoId: record.eventIoId,
       generationType: record.generationType,
       movement: record.movement,
+      mapMatching: record.mapMatching || null,
       io: record.io || {},
     }),
   }));
@@ -147,11 +150,11 @@ async function savePositionsForImei(imeiNumber, records) {
   const positions = await Position.bulkCreate(positionRows, {
     returning: true,
   });
-  const latestRecord = validRecords.reduce((latest, record) => {
+  const latestRecord = matchedRecords.reduce((latest, record) => {
     const latestTime = latest.timestamp ? latest.timestamp.getTime() : 0;
     const recordTime = record.timestamp ? record.timestamp.getTime() : 0;
     return recordTime >= latestTime ? record : latest;
-  }, validRecords[0]);
+  }, matchedRecords[0]);
 
   vehicle.lastLatitude = latestRecord.latitude;
   vehicle.lastLongitude = latestRecord.longitude;
