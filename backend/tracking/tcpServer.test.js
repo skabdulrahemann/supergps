@@ -23,10 +23,38 @@ const {
   PROTOCOL_LOCATION,
   PROTOCOL_HEARTBEAT,
 } = require("./gt06Protocol");
+const {
+  MSG_LOCATION_REPORT,
+  formatMessage: formatJt808Message,
+} = require("./jt808Protocol");
 const { withChecksum } = require("./multiProtocol.test");
 
 const KNOWN_IMEI = "864636050000001";
 const UNKNOWN_IMEI = "999999999999999";
+
+function bcd(text, length) {
+  const padded = text.padStart(length * 2, "0");
+  return Buffer.from(padded.match(/../g).map((pair) => Number.parseInt(pair, 16)));
+}
+
+function buildJt808Location() {
+  const body = Buffer.alloc(28);
+  let offset = 0;
+  body.writeUInt32BE(0, offset); offset += 4;
+  body.writeUInt32BE(0x00000003, offset); offset += 4;
+  body.writeUInt32BE(Math.round(19.1383 * 1000000), offset); offset += 4;
+  body.writeUInt32BE(Math.round(77.321 * 1000000), offset); offset += 4;
+  body.writeUInt16BE(450, offset); offset += 2;
+  body.writeUInt16BE(420, offset); offset += 2;
+  body.writeUInt16BE(180, offset); offset += 2;
+  Buffer.from([0x26, 0x08, 0x22, 0x12, 0x00, 0x00]).copy(body, offset);
+  return formatJt808Message(MSG_LOCATION_REPORT, {
+    protocolVersion: 1,
+    idBytes: bcd(KNOWN_IMEI, 10),
+    imei: KNOWN_IMEI,
+    serial: 8,
+  }, body);
+}
 
 function startServer(handlers) {
   return new Promise((resolve) => {
@@ -285,6 +313,63 @@ async function testTeltonikaOnlyListener() {
   await closeServer(server);
 }
 
+async function testH02PacketFlow() {
+  const receivedPositions = [];
+  const server = await startServer({
+    allowedProtocols: ["h02"],
+    isImeiAuthorized: (imei) => imei === KNOWN_IMEI,
+    onPositions: (imei, records) => {
+      receivedPositions.push({ imei, records });
+    },
+  });
+  const port = server.address().port;
+  const socket = await connect(port);
+
+  socket.write(Buffer.from(`*HQ,${KNOWN_IMEI},V0#`, "ascii"));
+  const loginAck = await waitForBytes(socket, `*HQ,${KNOWN_IMEI},V0#`.length);
+  assert.strictEqual(loginAck.toString("ascii"), `*HQ,${KNOWN_IMEI},V0#`);
+
+  socket.write(Buffer.from(
+    `*HQ,${KNOWN_IMEI},V1,120000,A,2232.1234,N,07234.5678,E,60,180,5,220826,FFFFFFFF#`,
+    "ascii",
+  ));
+  await new Promise((r) => setTimeout(r, 50));
+  assert.strictEqual(receivedPositions.length, 1);
+  assert.strictEqual(receivedPositions[0].imei, KNOWN_IMEI);
+  assert.strictEqual(receivedPositions[0].records[0].protocol, "h02");
+  assert.ok(
+    Math.abs(receivedPositions[0].records[0].longitude - 72.57613) < 0.00001,
+  );
+  console.log("PASS H02 login ACK and location callback");
+
+  socket.end();
+  await closeServer(server);
+}
+
+async function testJt808PacketFlow() {
+  const receivedPositions = [];
+  const server = await startServer({
+    allowedProtocols: ["jt808"],
+    isImeiAuthorized: (imei) => imei === KNOWN_IMEI,
+    onPositions: (imei, records) => receivedPositions.push({ imei, records }),
+  });
+  const port = server.address().port;
+  const socket = await connect(port);
+
+  socket.write(buildJt808Location());
+  const ack = await waitForBytes(socket, 1);
+  assert.strictEqual(ack[0], 0x7e);
+  await new Promise((r) => setTimeout(r, 50));
+  assert.strictEqual(receivedPositions.length, 1);
+  assert.strictEqual(receivedPositions[0].imei, KNOWN_IMEI);
+  assert.strictEqual(receivedPositions[0].records[0].protocol, "jt808");
+  assert.strictEqual(receivedPositions[0].records[0].ignition, true);
+  console.log("PASS JT808 location callback and ACK");
+
+  socket.end();
+  await closeServer(server);
+}
+
 async function testMaharashtraPacketFlow() {
   const receivedPositions = [];
   const server = await startServer({
@@ -436,6 +521,8 @@ async function run() {
   await testTeltonikaMultipleRecordsAndPackets();
   await testTeltonikaReconnect();
   await testTeltonikaOnlyListener();
+  await testH02PacketFlow();
+  await testJt808PacketFlow();
   await testMaharashtraPacketFlow();
   await testGt06PacketFlow();
   await testGt06FragmentedAndMultiplePackets();

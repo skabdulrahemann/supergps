@@ -8,6 +8,8 @@
  *
  * Supported protocols:
  *   - Teltonika Codec8 / Codec8 Extended
+ *   - H02 / Sinotrack ASCII packets (*HQ,...#)
+ *   - JT/T 808 binary packets (0x7e framed)
  *   - Maharashtra AIS-140 SOP ASCII packets ($NMP/$HLP/$EPB)
  *   - Concox/Jimi GT06-family packets (Iconcox V5-style trackers)
  */
@@ -17,6 +19,14 @@ const {
   decodeAvlPacket,
   encodeAck,
 } = require("./teltonikaCodec");
+const {
+  decodeH02Packet,
+  looksLikeH02Packet,
+} = require("./h02Protocol");
+const {
+  decodeJt808Packet,
+  looksLikeJt808Packet,
+} = require("./jt808Protocol");
 const {
   decodeMaharashtraPacket,
   encodeMaharashtraAck,
@@ -52,7 +62,7 @@ function createTrackingServer({
   onPositions,
   onDeviceConnected,
   onDeviceDisconnected,
-  allowedProtocols = ["maharashtra", "gt06", "teltonika"],
+  allowedProtocols = ["maharashtra", "gt06", "teltonika", "h02", "jt808"],
   logger = console,
 } = {}) {
   const protocolSet = new Set(allowedProtocols);
@@ -180,6 +190,84 @@ function createTrackingServer({
             continue;
           }
 
+          if (protocol === "h02") {
+            const decoded = decodeH02Packet(buffer);
+            if (!decoded) break;
+            buffer = buffer.subarray(decoded.bytesConsumed);
+            if (decoded.discarded) continue;
+
+            if (!authenticated || imei !== decoded.imei) {
+              const accepted = await authorizeDevice(
+                decoded.imei,
+                "H02",
+                remote,
+                socket,
+                logger,
+                isImeiAuthorized,
+              );
+              if (!accepted) return;
+              imei = decoded.imei;
+              authenticated = true;
+              gatewayStats.recordConnection("h02");
+              if (onDeviceConnected) onDeviceConnected(imei, remote);
+            }
+
+            logger.log(
+              `[GPS DECODE] Protocol: h02 IMEI: ${imei || decoded.imei} Type: ${decoded.type}`,
+            );
+            gatewayStats.recordPacket("h02");
+            if (decoded.records.length > 0 && onPositions) {
+              await onPositions(decoded.imei, decoded.records);
+            }
+            if (decoded.ack) {
+              writePacket(socket, decoded.ack, logger, "H02 ACK");
+            }
+            continue;
+          }
+
+          if (protocol === "jt808") {
+            const decoded = decodeJt808Packet(buffer);
+            if (!decoded) break;
+            buffer = buffer.subarray(decoded.bytesConsumed);
+            if (decoded.discarded) continue;
+
+            if (!decoded.checksumOk) {
+              gatewayStats.recordError("jt808");
+              logger.warn(
+                `[tracking] JT808 checksum mismatch from IMEI ${decoded.imei || imei || "unknown"} (${remote}) - packet discarded`,
+              );
+              continue;
+            }
+
+            if (!authenticated || imei !== decoded.imei) {
+              const accepted = await authorizeDevice(
+                decoded.imei,
+                "JT808",
+                remote,
+                socket,
+                logger,
+                isImeiAuthorized,
+              );
+              if (!accepted) return;
+              imei = decoded.imei;
+              authenticated = true;
+              gatewayStats.recordConnection("jt808");
+              if (onDeviceConnected) onDeviceConnected(imei, remote);
+            }
+
+            logger.log(
+              `[GPS DECODE] Protocol: jt808 IMEI: ${imei || decoded.imei} Type: 0x${decoded.type.toString(16)}`,
+            );
+            gatewayStats.recordPacket("jt808");
+            if (decoded.records.length > 0 && onPositions) {
+              await onPositions(decoded.imei, decoded.records);
+            }
+            if (decoded.ack) {
+              writePacket(socket, decoded.ack, logger, "JT808 ACK");
+            }
+            continue;
+          }
+
           if (!authenticated) {
             const handshake = decodeImeiHandshake(buffer);
             if (!handshake) break;
@@ -261,6 +349,12 @@ function detectProtocol(buffer, allowedProtocols) {
   }
   if (looksLikeGt06Packet(buffer)) {
     return allowedProtocols.has("gt06") ? "gt06" : null;
+  }
+  if (looksLikeH02Packet(buffer)) {
+    return allowedProtocols.has("h02") ? "h02" : null;
+  }
+  if (looksLikeJt808Packet(buffer)) {
+    return allowedProtocols.has("jt808") ? "jt808" : null;
   }
   return allowedProtocols.has("teltonika") ? "teltonika" : null;
 }

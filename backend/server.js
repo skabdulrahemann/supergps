@@ -11,6 +11,12 @@ const TRACKING_PORT = Number(process.env.TRACKING_PORT || 7077);
 const TELTONIKA_TRACKING_PORT = process.env.TELTONIKA_TRACKING_PORT
   ? Number(process.env.TELTONIKA_TRACKING_PORT)
   : null;
+const H02_TRACKING_PORT = process.env.H02_TRACKING_PORT
+  ? Number(process.env.H02_TRACKING_PORT)
+  : null;
+const JT808_TRACKING_PORT = process.env.JT808_TRACKING_PORT
+  ? Number(process.env.JT808_TRACKING_PORT)
+  : null;
 const TRACKING_ENABLED = process.env.TRACKING_ENABLED !== 'false';
 
 const startTrackingListener = ({ port, label, allowedProtocols }) => {
@@ -47,7 +53,7 @@ const startTrackingServer = () => {
     startTrackingListener({
       port: TRACKING_PORT,
       label: 'Tracking',
-      allowedProtocols: ['maharashtra', 'gt06', 'teltonika'],
+      allowedProtocols: ['maharashtra', 'gt06', 'teltonika', 'h02', 'jt808'],
     }),
   ];
 
@@ -57,6 +63,26 @@ const startTrackingServer = () => {
         port: TELTONIKA_TRACKING_PORT,
         label: 'Teltonika tracking',
         allowedProtocols: ['teltonika'],
+      }),
+    );
+  }
+
+  if (H02_TRACKING_PORT && H02_TRACKING_PORT !== TRACKING_PORT) {
+    servers.push(
+      startTrackingListener({
+        port: H02_TRACKING_PORT,
+        label: 'H02 tracking',
+        allowedProtocols: ['h02'],
+      }),
+    );
+  }
+
+  if (JT808_TRACKING_PORT && JT808_TRACKING_PORT !== TRACKING_PORT) {
+    servers.push(
+      startTrackingListener({
+        port: JT808_TRACKING_PORT,
+        label: 'JT808 tracking',
+        allowedProtocols: ['jt808'],
       }),
     );
   }
