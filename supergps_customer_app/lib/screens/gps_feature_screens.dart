@@ -1,11 +1,19 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../constants/colors.dart';
 import '../models/vehicle_model.dart';
-import '../services/api_service.dart';
+import '../models/vehicle_position.dart';
+import '../services/tracking_api_service.dart';
+import '../services/tracking_socket_service.dart';
+import '../utils/distance_utils.dart';
+import '../utils/gps_filter.dart';
+import '../widgets/speed_card.dart';
 import '../widgets/super_components.dart';
+import '../widgets/tracking_bottom_sheet.dart';
+import '../widgets/vehicle_marker.dart';
 import 'help_screen.dart';
 import 'orders_screen.dart';
 import 'profile_screen.dart';
@@ -14,185 +22,519 @@ import 'shop_screen.dart';
 const _noVehicleTitle = 'Select a vehicle';
 const _defaultMapCenter = LatLng(20.5937, 78.9629);
 
-class LiveTrackingScreen extends StatelessWidget {
+class LiveTrackingScreen extends StatefulWidget {
   final String vehicleNumber;
   final VehicleModel? vehicle;
   const LiveTrackingScreen(
       {super.key, this.vehicleNumber = _noVehicleTitle, this.vehicle});
 
-  Future<Map<String, dynamic>?> _loadLatest() async {
-    final vehicleId = vehicle?.id;
-    if (vehicleId == null || vehicleId.isEmpty) return null;
-    final res = await ApiService.get('/tracking/$vehicleId/latest');
-    if (res is! Map) return null;
-    return Map<String, dynamic>.from(res);
+  @override
+  State<LiveTrackingScreen> createState() => _LiveTrackingScreenState();
+}
+
+class _LiveTrackingScreenState extends State<LiveTrackingScreen>
+    with SingleTickerProviderStateMixin {
+  final MapController _mapController = MapController();
+  final TrackingSocketService _socketService = TrackingSocketService();
+  StreamSubscription<VehiclePosition>? _positionSub;
+  StreamSubscription<TrackingSocketState>? _socketStateSub;
+
+  late final AnimationController _moveController;
+  LatLng? _markerPoint;
+  LatLng? _fromPoint;
+  LatLng? _toPoint;
+  double _heading = 0;
+  double _fromHeading = 0;
+  double _toHeading = 0;
+
+  List<VehiclePosition> _routePositions = [];
+  VehiclePosition? _currentPosition;
+  Map<String, dynamic>? _vehicleSnapshot;
+  TrackingSocketState _socketState = TrackingSocketState.disconnected;
+  bool _loading = true;
+  bool _mapReady = false;
+  bool _hasCenteredInitially = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _moveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..addListener(_onMoveTick);
+    _bootstrap();
   }
 
-  String _formatSpeed(dynamic value) {
-    final speed = double.tryParse(value?.toString() ?? '');
-    if (speed == null) return '0 km/h';
-    return '${speed.round()} km/h';
+  Future<void> _bootstrap() async {
+    final vehicleId = widget.vehicle?.id;
+    if (vehicleId == null || vehicleId.isEmpty) {
+      setState(() {
+        _loading = false;
+        _error = 'Select a vehicle to start live tracking.';
+      });
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final snapshot = await TrackingApiService.loadInitial(vehicleId);
+      final cleanedRoute = GpsFilter.cleanRoute(snapshot.todayRoute);
+      final latest = snapshot.latestPosition;
+      final initialPosition =
+          latest != null && GpsFilter.isValidPosition(latest)
+              ? latest
+              : cleanedRoute.isNotEmpty
+                  ? cleanedRoute.last
+                  : _positionFromVehicle();
+
+      if (!mounted) return;
+      setState(() {
+        _vehicleSnapshot = snapshot.vehicle;
+        _routePositions = cleanedRoute;
+        _currentPosition = initialPosition;
+        _markerPoint = initialPosition?.point;
+        _heading = initialPosition?.heading ?? 0;
+        _loading = false;
+      });
+      _centerOnVehicle(zoom: 16, onlyOnce: true);
+      _connectSocket(vehicleId);
+    } catch (err) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = err.toString().replaceAll('Exception: ', '');
+      });
+      _connectSocket(vehicleId);
+    }
   }
 
-  String _formatStatus(Map<String, dynamic>? snapshot) {
-    final lastSeen = snapshot?['lastSeenAt'];
-    if (lastSeen == null) return 'Offline';
-    final speed = double.tryParse(snapshot?['lastSpeedKmh']?.toString() ?? '');
-    if ((speed ?? 0) > 3) return 'Running';
-    if (snapshot?['lastIgnition'] == true) return 'Idle';
-    return 'Stopped';
+  void _connectSocket(String vehicleId) {
+    _positionSub?.cancel();
+    _socketStateSub?.cancel();
+    _positionSub = _socketService.positions.listen(_handleLivePosition);
+    _socketStateSub = _socketService.states.listen((state) async {
+      if (!mounted) return;
+      setState(() => _socketState = state);
+      if (state == TrackingSocketState.connected) {
+        await _recoverMissedPositions();
+      }
+    });
+    _socketService.connect(vehicleId);
   }
 
-  Future<void> _openMaps(dynamic latitude, dynamic longitude) async {
-    final lat = double.tryParse(latitude?.toString() ?? '');
-    final lng = double.tryParse(longitude?.toString() ?? '');
-    if (lat == null || lng == null) return;
-    final uri =
-        Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+  VehiclePosition? _positionFromVehicle() {
+    final vehicle = widget.vehicle;
+    final lat = vehicle?.lastLatitude;
+    final lng = vehicle?.lastLongitude;
+    if (vehicle == null || lat == null || lng == null) return null;
+    final position = VehiclePosition(
+      vehicleId: vehicle.id,
+      latitude: lat,
+      longitude: lng,
+      speedKmh: vehicle.speedKmh ?? 0,
+      heading: 0,
+      ignition: vehicle.lastIgnition,
+      satellites: vehicle.lastSatellites,
+      deviceTime: DateTime.tryParse(vehicle.lastSeenAt ?? ''),
+    );
+    return GpsFilter.isValidPosition(position) ? position : null;
+  }
+
+  Future<void> _recoverMissedPositions() async {
+    final vehicleId = widget.vehicle?.id;
+    final lastTime =
+        _currentPosition?.deviceTime ?? _currentPosition?.receivedAt;
+    if (vehicleId == null || lastTime == null) return;
+    try {
+      final missed =
+          await TrackingApiService.loadPositionsSince(vehicleId, lastTime);
+      for (final position in missed) {
+        _handleLivePosition(position, animate: false);
+      }
+    } catch (_) {
+      // Keep the last known marker visible; socket reconnect will continue updates.
+    }
+  }
+
+  void _handleLivePosition(VehiclePosition position, {bool animate = true}) {
+    if (position.vehicleId != widget.vehicle?.id) return;
+    final previous = _currentPosition;
+    if (!GpsFilter.shouldAccept(next: position, previous: previous)) return;
+
+    final shouldAppend = _routePositions.isEmpty ||
+        GpsFilter.shouldAccept(next: position, previous: _routePositions.last);
+
+    setState(() {
+      _currentPosition = position;
+      if (shouldAppend) _routePositions = [..._routePositions, position];
+    });
+
+    if (animate && _markerPoint != null) {
+      _animateMarker(position);
+    } else {
+      setState(() {
+        _markerPoint = position.point;
+        _heading = position.heading;
+      });
+    }
+  }
+
+  void _animateMarker(VehiclePosition next) {
+    _fromPoint = _markerPoint;
+    _toPoint = next.point;
+    _fromHeading = _heading;
+    _toHeading = next.heading;
+    _moveController
+      ..stop()
+      ..reset()
+      ..forward();
+  }
+
+  void _onMoveTick() {
+    final from = _fromPoint;
+    final to = _toPoint;
+    if (from == null || to == null) return;
+    final t = Curves.linear.transform(_moveController.value);
+    setState(() {
+      _markerPoint = lerpLatLng(from, to, t);
+      _heading = lerpHeading(_fromHeading, _toHeading, t);
+    });
+  }
+
+  void _centerOnVehicle({double? zoom, bool onlyOnce = false}) {
+    if (onlyOnce && _hasCenteredInitially) return;
+    final point = _markerPoint;
+    if (point == null || !_mapReady) return;
+    _mapController.move(point, zoom ?? _mapController.camera.zoom);
+    if (onlyOnce) _hasCenteredInitially = true;
+  }
+
+  Future<void> _refresh() async => _bootstrap();
+
+  Future<void> _openMaps() async {
+    final point = _markerPoint;
+    if (point == null) return;
+    final uri = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=${point.latitude},${point.longitude}');
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   @override
+  void dispose() {
+    _positionSub?.cancel();
+    _socketStateSub?.cancel();
+    _socketService.dispose();
+    _moveController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final number = vehicle?.vehicleNumber ?? vehicleNumber;
-    return _Page(
-      title: 'Live Tracking',
-      action: IconButton(
-        icon: const Icon(Icons.refresh_rounded),
-        onPressed: () => Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => LiveTrackingScreen(
-              vehicleNumber: vehicleNumber,
-              vehicle: vehicle,
+    final number = widget.vehicle?.vehicleNumber ?? widget.vehicleNumber;
+    final routePoints = GpsFilter.simplifyForRender(
+        _routePositions.map((p) => p.point).toList());
+    final hasPosition = _markerPoint != null;
+    final status = _vehicleStatus();
+
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      appBar: AppBar(
+        titleSpacing: 0,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(number,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w900)),
+            Text(status,
+                style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700)),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _refresh,
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: _loading && !hasPosition
+                ? const Center(
+                    child:
+                        CircularProgressIndicator(color: AppColors.primaryDark),
+                  )
+                : FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: _markerPoint ?? _defaultMapCenter,
+                      initialZoom: hasPosition ? 16 : 5,
+                      onMapReady: () {
+                        _mapReady = true;
+                        _centerOnVehicle(zoom: 16, onlyOnce: true);
+                      },
+                      interactionOptions: const InteractionOptions(
+                        flags: InteractiveFlag.drag |
+                            InteractiveFlag.pinchZoom |
+                            InteractiveFlag.doubleTapZoom,
+                      ),
+                    ),
+                    children: [
+                      TileLayer(
+                        urlTemplate:
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.supergps.customer',
+                      ),
+                      if (routePoints.length > 1) ...[
+                        PolylineLayer(
+                          polylines: [
+                            Polyline(
+                              points: routePoints,
+                              color:
+                                  AppColors.textPrimary.withValues(alpha: 0.30),
+                              strokeWidth: 8,
+                            ),
+                          ],
+                        ),
+                        PolylineLayer(
+                          polylines: [
+                            Polyline(
+                              points: routePoints,
+                              color: AppColors.primary,
+                              strokeWidth: 5,
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (hasPosition)
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: _markerPoint!,
+                              width: 78,
+                              height: 78,
+                              alignment: Alignment.center,
+                              child: VehicleMarker(
+                                vehicleType: widget.vehicle?.vehicleType ??
+                                    (_vehicleSnapshot?['vehicleType']
+                                            ?.toString() ??
+                                        'car'),
+                                heading: _heading,
+                                online: status != 'Offline',
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+          ),
+          if (!_loading && !hasPosition)
+            Center(
+              child:
+                  _NoGpsState(message: _error ?? 'Waiting for GPS location...'),
+            ),
+          Positioned(
+            right: 14,
+            top: 14,
+            child: Column(
+              children: [
+                _MapButton(icon: Icons.add_rounded, onTap: _zoomIn),
+                const SizedBox(height: 10),
+                _MapButton(icon: Icons.remove_rounded, onTap: _zoomOut),
+                const SizedBox(height: 10),
+                _MapButton(
+                  icon: Icons.my_location_rounded,
+                  onTap: () => _centerOnVehicle(zoom: 16),
+                ),
+                const SizedBox(height: 10),
+                _MapButton(icon: Icons.open_in_new_rounded, onTap: _openMaps),
+              ],
             ),
           ),
+          Positioned(
+            left: 14,
+            top: 14,
+            child: SpeedCard(speedKmh: _currentPosition?.speedKmh ?? 0),
+          ),
+          Positioned(
+            left: 14,
+            right: 14,
+            top: 126,
+            child: _SocketStatusBanner(state: _socketState),
+          ),
+          TrackingBottomSheet(
+            vehicleNumber: number,
+            status: status,
+            position: _currentPosition,
+            todayDistanceKm: kilometersForRoute(routePoints),
+            location: _currentLocationLabel(),
+            lastUpdated: _lastUpdatedLabel(),
+            onPlayTrip: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PlaybackScreen()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _zoomIn() {
+    final camera = _mapController.camera;
+    _mapController.move(camera.center, camera.zoom + 1);
+  }
+
+  void _zoomOut() {
+    final camera = _mapController.camera;
+    _mapController.move(camera.center, camera.zoom - 1);
+  }
+
+  String _vehicleStatus() {
+    final position = _currentPosition;
+    if (position == null) return 'Offline';
+    final time = position.deviceTime ?? position.receivedAt;
+    if (time != null && DateTime.now().difference(time).inMinutes > 30) {
+      return 'Offline';
+    }
+    if (position.speedKmh > 3) return 'Moving';
+    if (position.ignition == false) return 'Parked';
+    if (position.ignition == true) return 'Stopped';
+    return position.speedKmh <= 3 ? 'Stopped' : 'Moving';
+  }
+
+  String _currentLocationLabel() {
+    final point = _markerPoint;
+    if (point == null) return 'Waiting for first GPS fix';
+    return '${point.latitude.toStringAsFixed(6)}, ${point.longitude.toStringAsFixed(6)}';
+  }
+
+  String _lastUpdatedLabel() {
+    final time = _currentPosition?.deviceTime ?? _currentPosition?.receivedAt;
+    if (time == null) return 'Not received yet';
+    final diff = DateTime.now().difference(time.toLocal());
+    if (diff.inSeconds < 10) return 'Just now';
+    if (diff.inMinutes < 1) return '${diff.inSeconds} sec ago';
+    if (diff.inHours < 1) return '${diff.inMinutes} min ago';
+    return '${diff.inHours} hr ago';
+  }
+}
+
+class _MapButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _MapButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      elevation: 4,
+      shadowColor: Colors.black.withValues(alpha: 0.12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Icon(icon, color: AppColors.textPrimary),
         ),
       ),
-      child: FutureBuilder<Map<String, dynamic>?>(
-        future: _loadLatest(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Column(
-              children: [
-                Expanded(
-                  child: _LiveVehicleMap(
-                    vehicle: vehicle,
-                    title: 'Tracking unavailable',
-                    subtitle: 'Latest location load nahi ho payi',
-                    latitude: null,
-                    longitude: null,
-                    course: null,
-                    online: false,
-                  ),
-                ),
-                _BottomSheetCard(
-                  children: [
-                    _StatusRow(
-                        vehicle: number, status: 'Offline', speed: '0 km/h'),
-                    const Divider(height: 26),
-                    _InfoLine(
-                      icon: Icons.error_outline_rounded,
-                      label: 'Error',
-                      value: snapshot.error
-                          .toString()
-                          .replaceAll('Exception: ', ''),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          }
+    );
+  }
+}
 
-          final data = snapshot.data;
-          final position = data?['position'] is Map
-              ? Map<String, dynamic>.from(data!['position'] as Map)
-              : null;
-          final vehicleSnapshot = data?['vehicle'] is Map
-              ? Map<String, dynamic>.from(data!['vehicle'] as Map)
-              : null;
-          final displayLatitude =
-              position?['latitude'] ?? vehicleSnapshot?['lastLatitude'] ?? vehicle?.lastLatitude;
-          final displayLongitude =
-              position?['longitude'] ?? vehicleSnapshot?['lastLongitude'] ?? vehicle?.lastLongitude;
-          final latitude = double.tryParse(displayLatitude?.toString() ?? '');
-          final longitude = double.tryParse(
-              displayLongitude?.toString() ?? '');
-          final course = double.tryParse(
-              (position?['course'] ?? vehicleSnapshot?['lastCourse'])
-                      ?.toString() ??
-                  '');
-          final hasPosition = latitude != null && longitude != null;
-          final status = _formatStatus(vehicleSnapshot);
-          final speed = _formatSpeed(position?['speedKmh'] ??
-              vehicleSnapshot?['lastSpeedKmh'] ??
-              vehicle?.speedKmh);
-          final updated = position?['deviceTimestamp']?.toString() ??
-              vehicleSnapshot?['lastSeenAt']?.toString() ??
-              vehicle?.lastSeen ??
-              'Not received yet';
-          final location = hasPosition
-              ? '$latitude, $longitude'
-              : vehicle?.lastLocation ?? 'Waiting for first GPS fix';
+class _SocketStatusBanner extends StatelessWidget {
+  final TrackingSocketState state;
+  const _SocketStatusBanner({required this.state});
 
-          if (snapshot.connectionState == ConnectionState.waiting &&
-              vehicle != null) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryDark),
-            );
-          }
+  @override
+  Widget build(BuildContext context) {
+    final text = switch (state) {
+      TrackingSocketState.connected => 'Connected',
+      TrackingSocketState.connecting => 'Connecting',
+      TrackingSocketState.reconnecting => 'Reconnecting',
+      TrackingSocketState.disconnected => 'Disconnected',
+    };
+    final color = state == TrackingSocketState.connected
+        ? AppColors.success
+        : state == TrackingSocketState.disconnected
+            ? AppColors.offline
+            : AppColors.warning;
 
-          return Column(
-            children: [
-              Expanded(
-                child: _LiveVehicleMap(
-                  vehicle: vehicle,
-                  title: number,
-                  subtitle: hasPosition
-                      ? '$status - $speed - $location'
-                      : 'No GPS data received yet',
-                  latitude: latitude,
-                  longitude: longitude,
-                  course: course,
-                  online: hasPosition,
-                ),
-              ),
-              _BottomSheetCard(
-                children: [
-                  _StatusRow(vehicle: number, status: status, speed: speed),
-                  const Divider(height: 26),
-                  _InfoLine(
-                      icon: Icons.location_on_rounded,
-                      label: 'Location',
-                      value: location),
-                  _InfoLine(
-                      icon: Icons.access_time_rounded,
-                      label: 'Updated',
-                      value: updated),
-                  _InfoLine(
-                      icon: Icons.vpn_key_rounded,
-                      label: 'Ignition',
-                      value: position?['ignition'] == true
-                          ? 'ON'
-                          : position?['ignition'] == false
-                              ? 'OFF'
-                              : 'Unknown'),
-                  _InfoLine(
-                      icon: Icons.gps_fixed_rounded,
-                      label: 'GPS / Network',
-                      value: hasPosition ? 'Received / Online' : 'Waiting'),
-                  if (hasPosition) ...[
-                    const SizedBox(height: 8),
-                    _PrimaryButton(
-                      label: 'Open Location in Maps',
-                      onTap: () => _openMaps(latitude, longitude),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          );
-        },
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.94),
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Text(text,
+                style: TextStyle(color: color, fontWeight: FontWeight.w900)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NoGpsState extends StatelessWidget {
+  final String message;
+  const _NoGpsState({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.gps_off_rounded,
+              color: AppColors.textMuted, size: 42),
+          const SizedBox(height: 12),
+          Text(message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w800)),
+        ],
       ),
     );
   }
@@ -1039,6 +1381,7 @@ String _markerAssetForVehicle(String? vehicleType) {
   return 'assets/gps_marker/car.png';
 }
 
+// ignore: unused_element
 class _LiveVehicleMap extends StatelessWidget {
   final VehicleModel? vehicle;
   final String title;
@@ -1206,6 +1549,7 @@ class _VehicleImageMarker extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _BottomSheetCard extends StatelessWidget {
   final List<Widget> children;
   const _BottomSheetCard({required this.children});
@@ -1224,6 +1568,7 @@ class _BottomSheetCard extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _StatusRow extends StatelessWidget {
   final String vehicle;
   final String status;

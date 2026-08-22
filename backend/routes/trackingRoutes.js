@@ -1,8 +1,14 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { getLatestPosition } = require('../controllers/trackingController');
-const { protect } = require('../middleware/auth');
+const {
+  getLatestPosition,
+  getPositions,
+  getTodayPositions,
+} = require("../controllers/trackingController");
+const { protect } = require("../middleware/auth");
 
-router.get('/:vehicleId/latest', protect, getLatestPosition);
+router.get("/:vehicleId/latest", protect, getLatestPosition);
+router.get("/:vehicleId/positions/today", protect, getTodayPositions);
+router.get("/:vehicleId/positions", protect, getPositions);
 
 module.exports = router;

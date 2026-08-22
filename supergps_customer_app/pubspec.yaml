@@ -18,6 +18,7 @@ dependencies:
   url_launcher: ^6.2.1
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
+  socket_io_client: ^3.1.2
 
 dev_dependencies:
   flutter_test:
@@ -28,6 +29,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/gps_marker/
+    - assets/images/
   fonts:
     - family: Inter
       fonts:

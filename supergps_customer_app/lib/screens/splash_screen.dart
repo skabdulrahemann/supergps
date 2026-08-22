@@ -76,20 +76,23 @@ class _SplashScreenState extends State<SplashScreen>
                 );
               },
               child: Container(
-                width: 112,
-                height: 112,
+                width: 136,
+                height: 136,
+                padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(32),
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(34),
                   boxShadow: [
                     BoxShadow(
-                        color: AppColors.primaryDark.withValues(alpha: 0.25),
+                        color: AppColors.primaryDark.withValues(alpha: 0.18),
                         blurRadius: 24,
                         offset: const Offset(0, 12)),
                   ],
                 ),
-                child: const Icon(Icons.navigation_rounded,
-                    color: AppColors.textPrimary, size: 56),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
             const SizedBox(height: 28),

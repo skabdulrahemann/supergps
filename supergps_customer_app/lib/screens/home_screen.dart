@@ -153,64 +153,14 @@ class _PromoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SuperCard(
-      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-      color: AppColors.textPrimary,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 92, maxHeight: 116),
-        child: Row(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(Icons.workspace_premium_rounded,
-                  color: AppColors.textPrimary, size: 30),
-            ),
-            const SizedBox(width: 14),
-            const Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'GPS renewal reminder',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    'Keep tracking active with one quick renewal.',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Color(0xFFD4D4D4),
-                      fontSize: 12.5,
-                      height: 1.25,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton.filled(
-              onPressed: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const RenewalScreen())),
-              icon: const Icon(Icons.arrow_forward_rounded),
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textPrimary,
-              ),
-            ),
-          ],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: SizedBox(
+        height: 190,
+        width: double.infinity,
+        child: Image.asset(
+          'assets/images/login_bg.png',
+          fit: BoxFit.cover,
         ),
       ),
     );
@@ -460,9 +410,16 @@ class CustomerAccountTab extends StatelessWidget {
                           style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.w900)),
                       const SizedBox(height: 2),
-                      Text(user?.phone.isNotEmpty == true ? user!.phone : 'Phone not added',
-                          style: const TextStyle(color: AppColors.textSecondary)),
-                      Text(user?.email.isNotEmpty == true ? user!.email : 'Email not added',
+                      Text(
+                          user?.phone.isNotEmpty == true
+                              ? user!.phone
+                              : 'Phone not added',
+                          style:
+                              const TextStyle(color: AppColors.textSecondary)),
+                      Text(
+                          user?.email.isNotEmpty == true
+                              ? user!.email
+                              : 'Email not added',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
