@@ -4,7 +4,7 @@ import L from 'leaflet';
 import { Activity, Clock, Gauge, Navigation, Power, Radio, Satellite } from 'lucide-react';
 import Modal from './Modal';
 import api from '../utils/api';
-import { createTrackingSocket } from '../utils/socket';
+import { createTrackingSocket, shouldUseTrackingSocket } from '../utils/socket';
 import bikeMarkerUrl from '../assets/GPS marker/bike.png';
 import carMarkerUrl from '../assets/GPS marker/car.png';
 import truckMarkerUrl from '../assets/GPS marker/trucks.png';
@@ -123,6 +123,11 @@ export default function VehicleTrackingModal({ vehicle, open, onClose }) {
 
   useEffect(() => {
     if (!open || !vehicle?.id) return;
+    if (!shouldUseTrackingSocket()) {
+      setSocketStatus('Auto refresh');
+      setSocketLive(false);
+      return;
+    }
 
     const socket = createTrackingSocket();
     setSocketStatus('Connecting...');
@@ -133,10 +138,9 @@ export default function VehicleTrackingModal({ vehicle, open, onClose }) {
       setSocketLive(false);
     });
 
-    socket.on('connect_error', (err) => {
-      setSocketStatus('Polling latest location');
+    socket.on('connect_error', () => {
+      setSocketStatus('Auto refresh');
       setSocketLive(false);
-      setError('Live socket connect nahi hua, latest location auto-refresh se update ho rahi hai.');
     });
 
     socket.on('tracking:connected', () => {
@@ -163,7 +167,7 @@ export default function VehicleTrackingModal({ vehicle, open, onClose }) {
     });
 
     socket.on('disconnect', () => {
-      setSocketStatus('Polling latest location');
+      setSocketStatus('Auto refresh');
       setSocketLive(false);
     });
 

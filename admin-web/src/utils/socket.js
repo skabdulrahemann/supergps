@@ -11,6 +11,19 @@ export function getSocketUrl() {
   return window.location.origin;
 }
 
+export function shouldUseTrackingSocket() {
+  const configuredSocketUrl = import.meta.env.VITE_SOCKET_URL;
+  if (configuredSocketUrl === 'disabled') return false;
+  if (configuredSocketUrl) return true;
+
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  if (apiBaseUrl?.startsWith('http')) {
+    return window.location.protocol !== 'https:' || apiBaseUrl.startsWith('https:');
+  }
+
+  return !window.location.hostname.endsWith('vercel.app');
+}
+
 export function createTrackingSocket() {
   const token = localStorage.getItem('token');
   return io(getSocketUrl(), {
